@@ -11,6 +11,12 @@
 # Edit date: 2024-05-03
 # Edit: Modified score_res_rap functions to add maximum 
 # score to columns with NA answers
+# ####
+# Editor: Rafael León
+# Editor email: leonraf@paho.org
+# Edit date: 2024-12-05
+# Edit: Added an output for joined analysis with Polio tool 
+# 
 #############################################################
 
 Sys.setlocale(locale = "es_ES.UTF-8")
@@ -729,6 +735,9 @@ silent_data <- geo_info %>%
   mutate(silent_mun = ifelse(GEO_ID %in% silent_mun$GEO_ID, T,F))
 calidad_data <- left_join(calidad_data, silent_data)
 
+# Changes 2024-12-05 ----
+# Added save function for the risk eval results for joint analysis
+export(indicadores_data, "Data/mmr_results.xlsx")
 # SAVE ----
 rm(aggregated_cases,cobs_inmunidad,
    calidad_data_join,

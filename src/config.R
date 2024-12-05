@@ -5,7 +5,7 @@
 # Última fecha de modificación: 2023-08-25
 # R 4.3.0
 ##############################################################
-
+if (!require("rstudioapi")) {install.packages("rstudioapi")}
 # Working dir ----
 # Working directory set from R project
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
@@ -14,7 +14,6 @@ Sys.setlocale(locale = "es_ES.UTF-8")
 # Pacman ----
 # Install and load package manager
 if (!require("pacman")) {install.packages("pacman")}
-if (!require("rstudioapi")) {install.packages("rstudioapi")}
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 library(pacman)
 
@@ -24,7 +23,7 @@ p_load(devtools,webshot,lubridate,forcats,stringr,dplyr,purrr,readr,tibble,
        tidyverse,tidyr,shinydashboard,shinyBS,shiny,shinycssloaders,sf,scales,
        rmarkdown,readxl,RColorBrewer,plotly,ggplot2,mapview,leaflet,janitor,
        htmltools,fontawesome,DT,data.table,knitr,geojsonio,rmapshaper,sp,
-       tinytex,rsconnect,writexl,
+       tinytex,rsconnect,writexl, rio,
        install = T)
 
 # Installation of phantomjs from Github
