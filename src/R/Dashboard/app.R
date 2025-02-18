@@ -741,7 +741,7 @@ ui <- fluidPage(
                                ),
                                
                                tabPanel(
-                                 title = lang_label("rap_pres_hospital"),icon = icon("hospital"),
+                                 title = lang_label("rap_pres_hospital"),icon = icon("user-clock"),
                                  br(),
                                  p(style="text-align: center;",lang_label("rap_pres_hospital_note")),
                                  br(),

@@ -16,7 +16,12 @@
 # Editor email: leonraf@paho.org
 # Edit date: 2024-12-05
 # Edit: Added an output for joined analysis with Polio tool 
-# 
+# ####
+# Editor: Rafael León
+# Editor email: leonraf@paho.org
+# Edit date: 2025-02-12
+# Edit: Modified the tool to include the changes to the 7. Rapid
+# response sheet
 #############################################################
 
 Sys.setlocale(locale = "es_ES.UTF-8")
@@ -345,8 +350,8 @@ score_res_rap_equipo <- function(conf) {
   if (IS_OUTBREAK) {
     PR = case_when(
       conf == 1 ~ 0,
-      conf == 0 ~ 3,
-      is.na(conf) ~ 3
+      conf == 0 ~ 12,
+      is.na(conf) ~ 12
     )
   } else {
     PR = case_when(
@@ -359,20 +364,19 @@ score_res_rap_equipo <- function(conf) {
 }
 
 # Proportion of subnational d hospitals with staff that are trained to do triage and isolation for measles/rubella highly suspected cases
-score_res_rap_hospitales <- function(p) {
+score_res_rap_hospitales <- function(conf) {
+  conf = toupper(conf)
   if (IS_OUTBREAK) {
     PR = case_when(
-      p >= 80 & p <= 100 ~ 0,
-      p >= 50 & p < 80 ~ 2,
-      p < 50 ~ 3,
-      is.na(p) ~ 3 
+      conf == 1 ~ 0,
+      conf == 0 ~ 12,
+      is.na(conf) ~ 12
     )
   } else {
     PR = case_when(
-      p >= 80 & p <= 100 ~ 0,
-      p >= 50 & p < 80 ~ 2,
-      p < 50 ~ 6,
-      is.na(p) ~ 6
+      conf == 1 ~ 0,
+      conf == 0 ~ 6,
+      is.na(conf) ~ 6
     )
   }
   return(PR)
@@ -412,7 +416,13 @@ YEAR_5 = YEAR_EVAL - 1
 COUNTRY_NAME <- config_data$val[1]
 REF_MMR1_AGE_MONTHS <- as.integer(config_data$val[5])
 REF_MMR2_AGE_MONTHS <- as.integer(config_data$val[6])
-IS_OUTBREAK <- case_when(
+# Maintain Is outbreak as false to avoid modifying code
+# This variable is now irrelevant, there is no separate scoring
+# For outbreaks or not outbreaks only for Rapid Response data
+IS_OUTBREAK <- F
+
+#Variable used in RAPID RESPONSE to determine if there is an outbreak or not
+OUTBREAK <- case_when(
   config_data$val[7] == yes_no_opts[2] ~ F,
   config_data$val[7] == yes_no_opts[1] ~ T
 )
@@ -515,6 +525,12 @@ aggregated_cases <- cases_data %>% group_by(GEO_ID) %>% summarise(
   Specimen_Collected=sum(Specimen_Collected),
   Timely_Avail_Of_Lab_Results=sum(Timely_Avail_Of_Lab_Results)
 )
+# 2025-02-12: Group by ADMIN1 of cases to use with rapid response data to adjust
+# for outbreak
+#cases_adm1_rr <- cases_data %>% 
+#  select(ADMIN1, ADMIN2, Confirmed_Case) %>% 
+#  group_by(ADMIN1) %>% 
+#  summarise(Confirmed_Case = sum(Confirmed_Case, na.rm = F))
 
 inm_aggregated_cases <- cases_data %>% 
   filter(MMR_Age_Elegible == 1) %>%
@@ -690,12 +706,22 @@ respuesta_rapida_data$equipo <- var_norm(respuesta_rapida_data$equipo)
 respuesta_rapida_data$equipo[respuesta_rapida_data$equipo == var_norm(yes_no_opts[1])] = "1" # Yes
 respuesta_rapida_data$equipo[respuesta_rapida_data$equipo == var_norm(yes_no_opts[2])] = "0" # No
 respuesta_rapida_data$equipo <- as.numeric(respuesta_rapida_data$equipo)
+
+# 2025-02-12: Hospital question changed to include a different qualitative question
+respuesta_rapida_data$hospitales_p <- toupper(respuesta_rapida_data$hospitales_p)
+respuesta_rapida_data$hospitales_p <- var_norm(respuesta_rapida_data$hospitales_p)
+respuesta_rapida_data$hospitales_p[respuesta_rapida_data$hospitales_p == var_norm(yes_no_opts[1])] = "1" # Yes
+respuesta_rapida_data$hospitales_p[respuesta_rapida_data$hospitales_p == var_norm(yes_no_opts[2])] = "0" # No
+respuesta_rapida_data$hospitales_p <- as.numeric(respuesta_rapida_data$hospitales_p)
+
 respuesta_rapida_data <- respuesta_rapida_data %>% mutate(
   equipo_PR = score_res_rap_equipo(equipo),
   hospitales_p_PR = score_res_rap_hospitales(hospitales_p)
 )
-respuesta_rapida_data$TOTAL_PR <- respuesta_rapida_data$equipo_PR+respuesta_rapida_data$hospitales_p_PR
-
+respuesta_rapida_data$TOTAL_PR <- ifelse(respuesta_rapida_data$equipo_PR == 6,12, respuesta_rapida_data$equipo_PR+respuesta_rapida_data$hospitales_p_PR)
+respuesta_rapida_data$equipo_PR <- ifelse(respuesta_rapida_data$equipo_PR == 6,6, respuesta_rapida_data$equipo_PR)
+respuesta_rapida_data$hospitales_p_PR <- ifelse(respuesta_rapida_data$equipo_PR == 6,6, respuesta_rapida_data$hospitales_p_PR)
+respuesta_rapida_data$hospitales_p <- ifelse(is.na(respuesta_rapida_data$equipo),0,ifelse(respuesta_rapida_data$equipo == 0,0, respuesta_rapida_data$hospitales_p))
 # Join to general risk results
 respuesta_rapida_data_join <- respuesta_rapida_data %>% select(`ADMIN1 GEO_ID`,GEO_ID,RES_RAPIDA=TOTAL_PR)
 indicadores_data <- left_join(indicadores_data,respuesta_rapida_data_join,by=c("ADMIN1 GEO_ID","GEO_ID"))
@@ -737,7 +763,7 @@ calidad_data <- left_join(calidad_data, silent_data)
 
 # Changes 2024-12-05 ----
 # Added save function for the risk eval results for joint analysis
-export(indicadores_data, "Data/mmr_results.xlsx")
+rio::export(indicadores_data, "Data/mmr_results.xlsx")
 # SAVE ----
 rm(aggregated_cases,cobs_inmunidad,
    calidad_data_join,

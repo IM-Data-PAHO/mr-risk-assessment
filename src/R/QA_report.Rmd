@@ -829,10 +829,10 @@ data_sheet_7$`ADMIN1 GEO_ID` <- as.character(data_sheet_7$`ADMIN1 GEO_ID`)
 data_sheet_7$GEO_ID <- as.character(data_sheet_7$GEO_ID)
 
 temp_ds_7 <- data_sheet_7
-temp_ds_7$hospitales_p[is.na(temp_ds_7$hospitales_p)] = 0
+#temp_ds_7$hospitales_p[is.na(temp_ds_7$hospitales_p)] = 0
 
 badrows_num_equipo <- which(!(data_sheet_7$equipo %in% yes_no_opts))
-badrows_num_hospitales <- which(is.na(as.numeric(temp_ds_7$hospitales_p)))
+badrows_num_hospitales <- which(!(data_sheet_7$hospitales_p %in% yes_no_opts))
 
 test_na_admin1_id <- sum(is.na(data_sheet_7$`ADMIN1 GEO_ID`)) == 0
 if (test_na_admin1_id) {text_na_admin1_id = ""} else {text_na_admin1_id = lang_label("test_na_admin1_id")}

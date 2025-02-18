@@ -17,7 +17,7 @@ p_load(devtools,webshot,lubridate,forcats,stringr,dplyr,purrr,readr,tibble,
        tidyverse,tidyr,shinydashboard,shinyBS,shiny,shinycssloaders,sf,scales,
        rmarkdown,readxl,RColorBrewer,plotly,ggplot2,mapview,leaflet,janitor,
        htmltools,fontawesome,data.table,knitr,geojsonio,rmapshaper,sp,
-       tinytex,DT)
+       tinytex,DT,rio)
 
 # 1. FLAG                 ----------------------------------------
 file.copy(from = "Data/country_flag.png",to ="R/Dashboard/www/country_flag.png",overwrite = T)
