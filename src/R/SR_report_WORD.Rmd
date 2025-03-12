@@ -422,7 +422,7 @@ silent_mun_table
 
 #### `r title_name_figure` 3f: `r lang_label("title_figure_3f")`, `r ref_country_name`, `r YEAR_5`.
 ```{r figure_3f, echo=F, out.width="78%"}
-fig_map <- cal_plot_map_data(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,calidad_data,"silent_mun",rep_label_all,0,admin1_geo_id_df)
+fig_map <- cal_plot_map_data(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,calidad_data,"case_class",rep_label_all,0,admin1_geo_id_df)
 fig_map <- tidy_map(fig_map)
 
 mapshot(fig_map, file = "figures/fig_3f.png",useragent = ZOOM_CONFIG)

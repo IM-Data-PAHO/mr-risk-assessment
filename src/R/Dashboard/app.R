@@ -483,7 +483,7 @@ ui <- fluidPage(
                                ),
                                ## Silent municipalities ---- 
                                tabPanel(
-                                 title = lang_label("silent_mun_lab"),icon = icon("bell-slash"),
+                                 title = lang_label("case_class_lab_short"),icon = icon("bell"),
                                  shinycssloaders::withSpinner(leafletOutput("calidad_map_5",height = 500),color = "#1c9ad6", type = "8", size = 0.5),
                                  br(),div(style="text-align: center;",downloadButton(outputId = "dl_calidad_map_5",lang_label("button_download_map"),icon=icon('camera')))
                                )
@@ -1235,7 +1235,7 @@ server <- function(input, output, session) {
   calidad_map_5 <- reactiveValues(dat = 0)
   output$dl_calidad_map_5 <- downloadHandler(
     filename = function() {
-      paste0(lang_label("map")," ",input$calidad_select_admin1," ",toupper(COUNTRY_NAME)," ",lang_label("silent_mun_lab")," (",YEAR_1,"-",YEAR_5,").png")
+      paste0(lang_label("map")," ",input$calidad_select_admin1," ",toupper(COUNTRY_NAME)," ",lang_label("case_class_lab")," (",YEAR_1,"-",YEAR_5,").png")
     },
     content = function(file) {
       mapshot(calidad_map_5$dat, file = file)
@@ -1244,7 +1244,7 @@ server <- function(input, output, session) {
   ### Silent muni map output ####
   # Output for cal_plot_map_data with silent municipalities
   output$calidad_map_5 <- renderLeaflet({
-    calidad_map_5$dat <- cal_plot_map_data(LANG_TLS,toupper(COUNTRY_NAME),YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,calidad_data,"silent_mun",input$calidad_select_admin1,get_a1_geo_id(input$calidad_select_admin1),admin1_geo_id_df)
+    calidad_map_5$dat <- cal_plot_map_data(LANG_TLS,toupper(COUNTRY_NAME),YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,calidad_data,"case_class",input$calidad_select_admin1,get_a1_geo_id(input$calidad_select_admin1),admin1_geo_id_df)
     calidad_map_5$dat
   })
   
@@ -1256,7 +1256,7 @@ server <- function(input, output, session) {
     valueBox(
       VB_style(surv_box_data[[2]],"font-size: 85%;"),
       VB_style(surv_box_data[[1]],"font-size: 100%;"),
-      icon = icon("bell-slash"),
+      icon = icon("bell"),
       color = "purple"
     )
   })
