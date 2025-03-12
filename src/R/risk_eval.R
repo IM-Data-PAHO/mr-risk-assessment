@@ -520,6 +520,7 @@ aggregated_cases <- cases_data %>% group_by(GEO_ID) %>% summarise(
   Unvac_Or_Unknown_Case=sum(Unvac_Or_Unknown_Case),
   MMR_Age_Elegible=sum(MMR_Age_Elegible),
   Suspected_Case=sum(Suspected_Case),
+  Confirmed_Case=sum(Confirmed_Case),
   Adequate_Investigation=sum(Adequate_Investigation),
   Adequate_Specimen_Coll=sum(Adequate_Specimen_Coll),
   Specimen_Collected=sum(Specimen_Collected),
@@ -598,7 +599,7 @@ indicadores_data <- left_join(indicadores_data,inmunidad_data_join,by=c("ADMIN1 
 calidad_data <- id_data
 calidad_data <- left_join(calidad_data,pop_data %>% select(-ADMIN1,-ADMIN2,-dens_pob),by=c("ADMIN1 GEO_ID","GEO_ID"))
 calidad_data <- calidad_data %>% filter(!is.na(GEO_ID) & GEO_ID %!in% ZERO_POB_LIST)
-calidad_data <- left_join(calidad_data,aggregated_cases %>% select("GEO_ID","Suspected_Case","Adequate_Investigation","Adequate_Specimen_Coll","Specimen_Collected","Timely_Avail_Of_Lab_Results"),by="GEO_ID")
+calidad_data <- left_join(calidad_data,aggregated_cases %>% select("GEO_ID","Suspected_Case","Confirmed_Case", "Adequate_Investigation","Adequate_Specimen_Coll","Specimen_Collected","Timely_Avail_Of_Lab_Results"),by="GEO_ID")
 calidad_data[is.na(calidad_data)] = 0
 
 calidad_data$tasa_casos <- round(calidad_data$Suspected_Case*100000/calidad_data$POB,1)
@@ -758,8 +759,16 @@ cases_unique <- cases_data %>%
   distinct(GEO_ID)
 silent_mun <- anti_join(geo_info,cases_unique) 
 silent_data <- geo_info %>% 
-  mutate(silent_mun = ifelse(GEO_ID %in% silent_mun$GEO_ID, T,F))
-calidad_data <- left_join(calidad_data, silent_data)
+  mutate(silent = ifelse(GEO_ID %in% silent_mun$GEO_ID, T,F))
+
+
+#Confirmed cases data
+
+calidad_data <- left_join(calidad_data, silent_data) %>% 
+  mutate(case_class = case_when(Confirmed_Case > 0 ~ "CONF",
+                                silent == T ~ "ND",
+                                TRUE ~ "REP")) %>% 
+  select(-silent)
 
 # Changes 2024-12-05 ----
 # Added save function for the risk eval results for joint analysis

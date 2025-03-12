@@ -15,7 +15,7 @@ cal_title_map <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,admin1,var) {
     var == "p_casos_inv" ~ paste0(lang_label_tls(LANG_TLS,"surv_adeq_inv")," ",admin1_transform(LANG_TLS,COUNTRY_NAME,admin1)," (",YEAR_5,")"),
     var == "p_casos_muestra" ~ paste0(lang_label_tls(LANG_TLS,"surv_adeq_sample")," ",admin1_transform(LANG_TLS,COUNTRY_NAME,admin1)," (",YEAR_5,")"),
     var == "p_muestras_lab" ~ paste0(lang_label_tls(LANG_TLS,"surv_timely_lab")," ",admin1_transform(LANG_TLS,COUNTRY_NAME,admin1)," (",YEAR_5,")"),
-    var == "silent_mun" ~ paste0(lang_label_tls(LANG_TLS,"silent_mun_lab")," ",admin1_transform(LANG_TLS,COUNTRY_NAME,admin1)," (",YEAR_5,")")
+    var == "case_class" ~ paste0(lang_label_tls(LANG_TLS,"case_class_lab")," ",admin1_transform(LANG_TLS,COUNTRY_NAME,admin1)," (",YEAR_5,")")
   )
   return(var_text)
 }
@@ -114,9 +114,9 @@ cal_plot_map_data <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_
         addLegend(title = lang_label_tls(LANG_TLS,"legend_risk_class"),colors = legend_colors,labels = legend_values, opacity = 0.5, position = 'topright')
     
       ## Silent Municipalities
-    } else if (var_to_summarise == "silent_mun") {
+    } else if (var_to_summarise == "case_class") {
       
-      legend_title = lang_label_tls(LANG_TLS, "silent_mun_legend")
+      legend_title = ""
       map_data <- map_data %>% rename("var"=var_to_summarise)
       #print(colnames(map_data))
       
@@ -129,9 +129,9 @@ cal_plot_map_data <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_
       map_data <- map_data %>% mutate(
         var_level_num = case_when(
           GEO_ID %in% ZERO_POB_LIST ~ 3,
-          is.na(var) ~ 0,
-          var == T ~ 1,
-          var == F ~ 2
+          var == "ND" ~ 0,
+          var == "REP" ~ 2,
+          var == "CONF" ~ 1
         )
       )
 
@@ -141,7 +141,8 @@ cal_plot_map_data <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_
       )
       #print(pal_gradient)
       legend_colors = c("#e8132b","#92d050")
-      legend_values = c(OPTS_DF$`Yes No`[2],OPTS_DF$`Yes No`[1])
+      legend_values = c(lang_label_tls(LANG_TLS,"case_class_legend_conf"),
+                        lang_label_tls(LANG_TLS,"case_class_legend_rep"))
       
       if (0 %in% map_data$var_level_num) {
         legend_colors = c("#666666",legend_colors)
@@ -156,8 +157,8 @@ cal_plot_map_data <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_
       shape_label <- sprintf("<strong>%s</strong>, %s<br/>%s: %s",
                              map_data$ADMIN2,
                              map_data$ADMIN1,
-                             lang_label_tls(LANG_TLS, "silent_mun_legend"),
-                             ifelse(map_data$var == T, OPTS_DF$`Yes No`[2], OPTS_DF$`Yes No`[1])
+                             "",
+                             ifelse(map_data$var == "CONF", lang_label_tls(LANG_TLS,"case_class_legend_conf"), lang_label_tls(LANG_TLS,"case_class_legend_rep"))
 
       ) %>% lapply(HTML)
       
@@ -344,7 +345,7 @@ cal_plot_map_data <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_
 cal_get_data_table <- function(LANG_TLS,CUT_OFFS,data,admin1_id) {
   
   data$risk_level <- get_risk_level(LANG_TLS,CUT_OFFS,"SURV_QUAL",data$TOTAL_PR)
-  data <- data %>% select(`ADMIN1 GEO_ID`,ADMIN1,ADMIN2,TOTAL_PR,risk_level,Suspected_Case,POB,tasa_casos, tasa_casos_PR, p_casos_inv, p_casos_inv_PR, p_casos_muestra, p_casos_muestra_PR, p_muestras_lab, p_muestras_lab_PR) %>% 
+  data <- data %>% select(`ADMIN1 GEO_ID`,ADMIN1,ADMIN2,TOTAL_PR,risk_level,Suspected_Case, Confirmed_Case, POB,tasa_casos, tasa_casos_PR, p_casos_inv, p_casos_inv_PR, p_casos_muestra, p_casos_muestra_PR, p_muestras_lab, p_muestras_lab_PR) %>% 
     mutate(
       POB = cFormat(POB,0),
       tasa_casos = round((tasa_casos),1),
@@ -362,7 +363,8 @@ cal_get_data_table <- function(LANG_TLS,CUT_OFFS,data,admin1_id) {
     data <- data %>% select(-`ADMIN1 GEO_ID`)
     colnames(data) <- c(lang_label_tls(LANG_TLS,"table_admin1_name"),lang_label_tls(LANG_TLS,"table_admin2_name"),
                         lang_label_tls(LANG_TLS,"total_pr"),lang_label_tls(LANG_TLS,"risk_level"),
-                        lang_label_tls(LANG_TLS,"surv_table_cases"),lang_label_tls(LANG_TLS,"surv_table_pob"),
+                        lang_label_tls(LANG_TLS,"surv_table_cases"),lang_label_tls(LANG_TLS,"surv_table_cases_conf"),
+                        lang_label_tls(LANG_TLS,"surv_table_pob"),
                         lang_label_tls(LANG_TLS,"surv_table_rate"),lang_label_tls(LANG_TLS,"surv_table_rate_pr"),
                         lang_label_tls(LANG_TLS,"surv_table_adeq_inv"),lang_label_tls(LANG_TLS,"surv_table_adeq_inv_pr"),
                         lang_label_tls(LANG_TLS,"surv_table_adeq_sample"),lang_label_tls(LANG_TLS,"surv_table_adeq_sample_pr"),
@@ -371,7 +373,8 @@ cal_get_data_table <- function(LANG_TLS,CUT_OFFS,data,admin1_id) {
     data <- data %>% filter(`ADMIN1 GEO_ID` == admin1_id) %>% select(-ADMIN1,-`ADMIN1 GEO_ID`)
     colnames(data) <- c(lang_label_tls(LANG_TLS,"table_admin2_name"),
                         lang_label_tls(LANG_TLS,"total_pr"),lang_label_tls(LANG_TLS,"risk_level"),
-                        lang_label_tls(LANG_TLS,"surv_table_cases"),lang_label_tls(LANG_TLS,"surv_table_pob"),
+                        lang_label_tls(LANG_TLS,"surv_table_cases"),lang_label_tls(LANG_TLS,"surv_table_cases_conf"),
+                        lang_label_tls(LANG_TLS,"surv_table_pob"),
                         lang_label_tls(LANG_TLS,"surv_table_rate"),lang_label_tls(LANG_TLS,"surv_table_rate_pr"),
                         lang_label_tls(LANG_TLS,"surv_table_adeq_inv"),lang_label_tls(LANG_TLS,"surv_table_adeq_inv_pr"),
                         lang_label_tls(LANG_TLS,"surv_table_adeq_sample"),lang_label_tls(LANG_TLS,"surv_table_adeq_sample_pr"),
@@ -420,31 +423,36 @@ cal_get_data_table <- function(LANG_TLS,CUT_OFFS,data,admin1_id) {
 
 cal_surv_data_vbox <- function(LANG_TLS,COUNTRY_NAME,data,admin1,admin1_id) {
   if (admin1_id == 0) {
-    data <- data %>% select(GEO_ID,ADMIN1,ADMIN2,silent_mun)
+    data <- data %>% select(GEO_ID,ADMIN1,ADMIN2,case_class)
   } else {
-    data <- data %>% filter(`ADMIN1 GEO_ID` == admin1_id) %>% select(GEO_ID,ADMIN1,ADMIN2,silent_mun)
+    data <- data %>% filter(`ADMIN1 GEO_ID` == admin1_id) %>% select(GEO_ID,ADMIN1,ADMIN2,case_class)
   }
-  legend_title = lang_label_tls(LANG_TLS, "silent_mun_infobox_text")
-  count_muni <- length(data$silent_mun[data$silent_mun == T])
-  txt <- HTML(paste0("<div>",cFormat(count_muni,0),"<p style='color:#fffffff;'>(",cFormat(count_muni/length(data$silent_mun)*100,1),"%)</p></div>"))
+  legend_title = lang_label_tls(LANG_TLS, "case_class_infobox_text")
+  count_muni <- length(data$case_class[data$case_class == "CONF"])
+  
+  txt <- HTML(paste0("<div>",cFormat(count_muni,0),"<p style='color:#fffffff;'>(",cFormat(count_muni/length(data$case_class)*100,1),"%)</p></div>"))
   return(list(legend_title,txt))
 }
 
 cal_surv_data_table <- function(LANG_TLS,COUNTRY_NAME,data) {
   
-  legend_title = lang_label_tls(LANG_TLS, "silent_mun_infobox_text")
-  percent_title = lang_label_tls(LANG_TLS, "silent_mun_lab_pct")
-  count_muni <- length(data$silent_mun[data$silent_mun == T])
-  pct_muni <- cFormat(count_muni/length(data$silent_mun)*100,1)
+  legend_title = lang_label_tls(LANG_TLS, "case_class_infobox_text")
+  percent_title = lang_label_tls(LANG_TLS, "case_class_infobox_pct")
+  count_muni <- length(data$case_class[data$case_class == "CONF"])
+  pct_muni <- paste0(cFormat(count_muni/length(data$case_class)*100,1),"%")
   
+  print(legend_title)
+  print(percent_title)
+  print(count_muni)
+  print(pct_muni)
   # Create a data frame with the labels and values
   df <- data.frame(
     Label = c(legend_title, percent_title),
     Value = c(count_muni, pct_muni)
   )
-  
+  print(df)
   # Generate the kable table
-  tbl <- knitr::kable(df, col.names = c(lang_label_tls(LANG_TLS, "silent_mun_lab"
+  tbl <- knitr::kable(df, col.names = c(lang_label_tls(LANG_TLS, "case_class_lab_short"
 ), ""), align = "lrrrrrr", booktabs = T ) 
   
   return(tbl)
