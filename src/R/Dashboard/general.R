@@ -322,11 +322,11 @@ ind_plot_multibar_data <- function(LANG_TLS,CUT_OFFS,bar_data,admin1_id,selected
       }
       
       fig <- plot_ly(bar_data, type = 'bar',orientation = 'h',y = ~LUGAR,
-                     x = ~INMUNIDAD_POB, name = lang_label_tls(LANG_TLS,"menuitem_inm_pob"),marker = list(color = "#8DB1CC"),text = ~INMUNIDAD_POB, textposition = 'inside',textangle = 0) %>%
-        add_trace(x = ~CALIDAD_VIG, name = lang_label_tls(LANG_TLS,"menuitem_surv_qual"), marker = list(color = "#2165A4"),text = ~CALIDAD_VIG, textposition = 'inside') %>%
-        add_trace(x = ~RENDIMIENTO_PROG, name = lang_label_tls(LANG_TLS,"menuitem_prog_del"), marker = list(color = "#253E80"),text = ~RENDIMIENTO_PROG, textposition = 'inside') %>%
-        add_trace(x = ~EVAL_AMENAZA, name = lang_label_tls(LANG_TLS,"menuitem_thre_asse"), marker = list(color = "#6436A5"),text = ~EVAL_AMENAZA, textposition = 'inside') %>%
-        add_trace(x = ~RES_RAPIDA, name = lang_label_tls(LANG_TLS,"menuitem_rap_res"), marker = list(color = "#39076A"),text = ~RES_RAPIDA, textposition = 'inside') %>%
+                     x = ~INMUNIDAD_POB, name = lang_label_tls(LANG_TLS,"menuitem_inm_pob"),marker = list(color = "#0463fb"),text = ~INMUNIDAD_POB, textposition = 'inside',textangle = 0) %>%
+        add_trace(x = ~CALIDAD_VIG, name = lang_label_tls(LANG_TLS,"menuitem_surv_qual"), marker = list(color = "#000099"),text = ~CALIDAD_VIG, textposition = 'inside') %>%
+        add_trace(x = ~RENDIMIENTO_PROG, name = lang_label_tls(LANG_TLS,"menuitem_prog_del"), marker = list(color = "#c65911"),text = ~RENDIMIENTO_PROG, textposition = 'inside') %>%
+        add_trace(x = ~EVAL_AMENAZA, name = lang_label_tls(LANG_TLS,"menuitem_thre_asse"), marker = list(color = "#6600cc"),text = ~EVAL_AMENAZA, textposition = 'inside') %>%
+        add_trace(x = ~RES_RAPIDA, name = lang_label_tls(LANG_TLS,"menuitem_rap_res"), marker = list(color = "#55cc55"),text = ~RES_RAPIDA, textposition = 'inside') %>%
         
         layout(xaxis = list(title = x_axis_title, tickfont=list(size=12)), 
                barmode = 'stack',
@@ -334,11 +334,11 @@ ind_plot_multibar_data <- function(LANG_TLS,CUT_OFFS,bar_data,admin1_id,selected
         ) %>%
         layout(shapes = list(
           list(type = "rect",fillcolor = "#92d050", line = list(color = "#92d050"),
-               opacity = 0.4, layer = "below",
+               opacity = 0.2, layer = "below",
                x0 = 0, x1 = get_risk_level_point_limit(CUT_OFFS,indicator,"LR"), xref = "x",
                y0 = -1, y1 = nrow(bar_data), yref = "y"),
           list(type = "rect",fillcolor = "#fec000", line = list(color = "#fec000"),
-               opacity = 0.3, layer = "below",
+               opacity = 0.2, layer = "below",
                x0 = get_risk_level_point_limit(CUT_OFFS,indicator,"LR"), x1 = get_risk_level_point_limit(CUT_OFFS,indicator,"MR"), xref = "x",
                y0 = -1, y1 = nrow(bar_data), yref = "y"),
           list(type = "rect",fillcolor = "#e8132b", line = list(color = "#e8132b"),
@@ -346,7 +346,7 @@ ind_plot_multibar_data <- function(LANG_TLS,CUT_OFFS,bar_data,admin1_id,selected
                x0 = get_risk_level_point_limit(CUT_OFFS,indicator,"MR"), x1 = get_risk_level_point_limit(CUT_OFFS,indicator,"HR"), xref = "x",
                y0 = -1, y1 = nrow(bar_data), yref = "y"),
           list(type = "rect",fillcolor = "#920000", line = list(color = "#920000"),
-               opacity = 0.3, layer = "below",
+               opacity = 0.2, layer = "below",
                x0 = get_risk_level_point_limit(CUT_OFFS,indicator,"HR"), x1 = max_y_point, xref = "x",
                y0 = -1, y1 = nrow(bar_data), yref = "y")
         )) %>%

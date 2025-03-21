@@ -441,16 +441,11 @@ cal_surv_data_table <- function(LANG_TLS,COUNTRY_NAME,data) {
   count_muni <- length(data$case_class[data$case_class == "CONF"])
   pct_muni <- paste0(cFormat(count_muni/length(data$case_class)*100,1),"%")
   
-  print(legend_title)
-  print(percent_title)
-  print(count_muni)
-  print(pct_muni)
   # Create a data frame with the labels and values
   df <- data.frame(
     Label = c(legend_title, percent_title),
     Value = c(count_muni, pct_muni)
   )
-  print(df)
   # Generate the kable table
   tbl <- knitr::kable(df, col.names = c(lang_label_tls(LANG_TLS, "case_class_lab_short"
 ), ""), align = "lrrrrrr", booktabs = T ) 

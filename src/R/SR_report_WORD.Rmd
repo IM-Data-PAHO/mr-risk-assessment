@@ -414,6 +414,7 @@ knitr::include_graphics("figures/fig_3e.png")
 \newpage
 
 ### `r title_name_table` 3b: `r lang_label("title_figure_3f")`, `r ref_country_name`, `r YEAR_1`-`r YEAR_5`.
+
 ```{r table_3b, echo=F}
 silent_mun_table <- cal_surv_data_table(LANG_TLS,COUNTRY_NAME,calidad_data)
 
