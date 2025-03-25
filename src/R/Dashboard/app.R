@@ -736,6 +736,8 @@ ui <- fluidPage(
                                tabPanel(
                                  title = lang_label("rap_pres_team"),icon = icon("user-md"),
                                  br(),
+                                 p(style="text-align: center;",lang_label("rap_pres_team_note")),
+                                 br(),
                                  shinycssloaders::withSpinner(leafletOutput("resrapida_map_1",height = 500),color = "#1c9ad6", type = "8", size = 0.5),
                                  br(),div(style="text-align: center;",downloadButton(outputId = "dl_resrapida_map_1",lang_label("button_download_map"),icon=icon('camera')))
                                ),

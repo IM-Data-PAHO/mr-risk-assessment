@@ -1,7 +1,7 @@
 ---
 title: "`r library(readxl); if (read_excel('../Data/country_data.xlsx')[8,2] == 'SPA') {paste(read_excel('translations.xlsx',sheet='REPORT')[1,2])} else if (read_excel('../Data/country_data.xlsx')[8,2] == 'ENG') {paste(read_excel('translations.xlsx',sheet='REPORT')[1,3])} else if (read_excel('../Data/country_data.xlsx')[8,2] == 'POR') {paste(read_excel('translations.xlsx',sheet='REPORT')[1,4])} else if (read_excel('../Data/country_data.xlsx')[8,2] == 'FRA') {paste(read_excel('translations.xlsx',sheet='REPORT')[1,5])};`  - `r library(readxl); read_excel('../Data/country_data.xlsx',sheet = 1)[1,2];`"
 author: "`r library(readxl); if (read_excel('../Data/country_data.xlsx')[8,2] == 'SPA') {paste(read_excel('translations.xlsx',sheet='REPORT')[2,2])} else if (read_excel('../Data/country_data.xlsx')[8,2] == 'ENG') {paste(read_excel('translations.xlsx',sheet='REPORT')[2,3])} else if (read_excel('../Data/country_data.xlsx')[8,2] == 'POR') {paste(read_excel('translations.xlsx',sheet='REPORT')[2,4])} else if (read_excel('../Data/country_data.xlsx')[8,2] == 'FRA') {paste(read_excel('translations.xlsx',sheet='REPORT')[2,5])};` - `r library(readxl); read_excel('../Data/country_data.xlsx',sheet = 1)[1,2];`, `r format(Sys.Date(),'%d.%m.%Y')`"
-date: "![](Dashboard/www/country_flag.png){width=20%}"
+date: "![](Dashboard/www/country_flag.png){width=60%}"
 output:
   word_document: default
 ---
@@ -130,10 +130,10 @@ cut_offs_table <- data.frame(
   cat=c(lang_label("table_cut_offs_LR"),lang_label("table_cut_offs_MR"),
         lang_label("table_cut_offs_HR"),lang_label("table_cut_offs_VHR")),
   pts=c(
-    paste0(lang_label("table_cut_offs_less")," ",lim_bajo+1," ",lang_label("table_cut_offs_unit")),
-    paste0(lang_label("table_cut_offs_btwn")," ",lim_bajo+1," ",lang_label("and")," ",lim_mediano," ",lang_label("table_cut_offs_unit")),
-    paste0(lang_label("table_cut_offs_btwn")," ",lim_mediano+1," ",lang_label("and")," ",lim_alto," ",lang_label("table_cut_offs_unit")),
-    paste0(lang_label("table_cut_offs_more")," ",lim_muyalto," ",lang_label("table_cut_offs_unit"))
+    paste0(lang_label("table_cut_offs_btwn")," ",0," ",lang_label("and")," ",24," ",lang_label("table_cut_offs_unit")),
+    paste0(lang_label("table_cut_offs_btwn")," ",lim_bajo," ",lang_label("and")," ",lim_mediano-1," ",lang_label("table_cut_offs_unit")),
+    paste0(lang_label("table_cut_offs_btwn")," ",lim_mediano," ",lang_label("and")," ",lim_alto-1," ",lang_label("table_cut_offs_unit")),
+    paste0(lang_label("table_cut_offs_btwn")," ",lim_alto," ",lang_label("and")," ",100," ",lang_label("table_cut_offs_unit"))
   )
 )
 colnames(cut_offs_table) = c(lang_label("table_cut_offs_riskcats"),lang_label("table_cut_offs_risktotal"))
@@ -254,45 +254,45 @@ mapshot(fig_map, file = "figures/fig_2b.png",useragent = ZOOM_CONFIG)
 knitr::include_graphics("figures/fig_2b.png")
 ```
 
-#### `r title_name_figure` 2c: `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_1`.
-```{r figure_2c, echo=F, out.width="78%"}
-fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP1_year1",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
+<!-- #### `r title_name_figure` 2c: `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_1`. -->
+<!-- ```{r figure_2c, echo=F, out.width="78%"} -->
+<!-- fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP1_year1",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
 
-mapshot(fig_map, file = "figures/fig_2c.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_2c.png")
-```
+<!-- mapshot(fig_map, file = "figures/fig_2c.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_2c.png") -->
+<!-- ``` -->
 
-\newpage
-#### `r title_name_figure` 2d: `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_2`.
-```{r figure_2d, echo=F, out.width="78%"}
-fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP1_year2",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
+<!-- \newpage -->
+<!-- #### `r title_name_figure` 2d: `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_2`. -->
+<!-- ```{r figure_2d, echo=F, out.width="78%"} -->
+<!-- fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP1_year2",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
 
-mapshot(fig_map, file = "figures/fig_2d.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_2d.png")
-```
+<!-- mapshot(fig_map, file = "figures/fig_2d.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_2d.png") -->
+<!-- ``` -->
 
-#### `r title_name_figure` 2e: `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_3`.
-```{r figure_2e, echo=F, out.width="78%"}
-fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP1_year3",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
+<!-- #### `r title_name_figure` 2e: `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_3`. -->
+<!-- ```{r figure_2e, echo=F, out.width="78%"} -->
+<!-- fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP1_year3",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
 
-mapshot(fig_map, file = "figures/fig_2e.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_2e.png")
-```
+<!-- mapshot(fig_map, file = "figures/fig_2e.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_2e.png") -->
+<!-- ``` -->
 
-\newpage
-#### `r title_name_figure` 2f `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_4`.
-```{r figure_2f, echo=F, out.width="78%"}
-fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP1_year4",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
+<!-- \newpage -->
+<!-- #### `r title_name_figure` 2f `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_4`. -->
+<!-- ```{r figure_2f, echo=F, out.width="78%"} -->
+<!-- fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP1_year4",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
 
-mapshot(fig_map, file = "figures/fig_2f.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_2f.png")
-```
+<!-- mapshot(fig_map, file = "figures/fig_2f.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_2f.png") -->
+<!-- ``` -->
 
-#### `r title_name_figure` 2g: `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_5`.
+#### `r title_name_figure` 2c: `r lang_label("title_figure_2_SPR1")`, `r ref_country_name`, `r YEAR_5`.
 ```{r figure_2g, echo=F, out.width="78%"}
 fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP1_year5",rep_label_all,0,admin1_geo_id_df)
 fig_map <- tidy_map(fig_map)
@@ -301,46 +301,46 @@ mapshot(fig_map, file = "figures/fig_2g.png",useragent = ZOOM_CONFIG)
 knitr::include_graphics("figures/fig_2g.png")
 ```
 
+<!-- \newpage -->
+<!-- #### `r title_name_figure` 2h: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_1`. -->
+<!-- ```{r figure_2h, echo=F, out.width="78%"} -->
+<!-- fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP2_year1",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
+
+<!-- mapshot(fig_map, file = "figures/fig_2h.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_2h.png") -->
+<!-- ``` -->
+
+<!-- #### `r title_name_figure` 2i: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_2`. -->
+<!-- ```{r figure_2i, echo=F, out.width="78%"} -->
+<!-- fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP2_year2",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
+
+<!-- mapshot(fig_map, file = "figures/fig_2i.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_2i.png") -->
+<!-- ``` -->
+
+<!-- \newpage -->
+<!-- #### `r title_name_figure` 2j: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_3`. -->
+<!-- ```{r figure_2j, echo=F, out.width="78%"} -->
+<!-- fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP2_year3",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
+
+<!-- mapshot(fig_map, file = "figures/fig_2j.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_2j.png") -->
+<!-- ``` -->
+
+<!-- #### `r title_name_figure` 2k: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_4`. -->
+<!-- ```{r figure_2k, echo=F, out.width="78%"} -->
+<!-- fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP2_year4",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
+
+<!-- mapshot(fig_map, file = "figures/fig_2k.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_2k.png") -->
+<!-- ``` -->
+
 \newpage
-#### `r title_name_figure` 2h: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_1`.
-```{r figure_2h, echo=F, out.width="78%"}
-fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP2_year1",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
-
-mapshot(fig_map, file = "figures/fig_2h.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_2h.png")
-```
-
-#### `r title_name_figure` 2i: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_2`.
-```{r figure_2i, echo=F, out.width="78%"}
-fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP2_year2",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
-
-mapshot(fig_map, file = "figures/fig_2i.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_2i.png")
-```
-
-\newpage
-#### `r title_name_figure` 2j: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_3`.
-```{r figure_2j, echo=F, out.width="78%"}
-fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP2_year3",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
-
-mapshot(fig_map, file = "figures/fig_2j.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_2j.png")
-```
-
-#### `r title_name_figure` 2k: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_4`.
-```{r figure_2k, echo=F, out.width="78%"}
-fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP2_year4",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
-
-mapshot(fig_map, file = "figures/fig_2k.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_2k.png")
-```
-
-\newpage
-#### `r title_name_figure` 2l: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_5`.
+#### `r title_name_figure` 2d: `r lang_label("title_figure_2_SPR2")`, `r ref_country_name`, `r YEAR_5`.
 ```{r figure_2l, echo=F, out.width="78%"}
 fig_map <- inmu_plot_map_data(LANG_TLS,YEAR_CAMP_SR,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,inmunidad_data,"SRP2_year5",rep_label_all,0,admin1_geo_id_df)
 fig_map <- tidy_map(fig_map)
@@ -454,26 +454,26 @@ knitr::include_graphics("figures/fig_4a.png")
 ```
 
 \newpage
-#### `r title_name_figure` 4b: `r lang_label("title_figure_4b")`, `r ref_country_name`, `r YEAR_1`-`r YEAR_5`.
-```{r figure_4b, echo=F, out.width="78%"}
-fig_map <- rend_plot_map_data(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,rendimiento_data,"tendencia_SRP1",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
+<!-- #### `r title_name_figure` 4b: `r lang_label("title_figure_4b")`, `r ref_country_name`, `r YEAR_1`-`r YEAR_5`. -->
+<!-- ```{r figure_4b, echo=F, out.width="78%"} -->
+<!-- fig_map <- rend_plot_map_data(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,rendimiento_data,"tendencia_SRP1",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
 
-mapshot(fig_map, file = "figures/fig_4b.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_4b.png")
-```
+<!-- mapshot(fig_map, file = "figures/fig_4b.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_4b.png") -->
+<!-- ``` -->
 
-#### `r title_name_figure` 4c: `r lang_label("title_figure_4c")`, `r ref_country_name`, `r YEAR_1`-`r YEAR_5`.
-```{r figure_4c, echo=F, out.width="78%"}
-fig_map <- rend_plot_map_data(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,rendimiento_data,"tendencia_SRP2",rep_label_all,0,admin1_geo_id_df)
-fig_map <- tidy_map(fig_map)
+<!-- #### `r title_name_figure` 4c: `r lang_label("title_figure_4c")`, `r ref_country_name`, `r YEAR_1`-`r YEAR_5`. -->
+<!-- ```{r figure_4c, echo=F, out.width="78%"} -->
+<!-- fig_map <- rend_plot_map_data(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,rendimiento_data,"tendencia_SRP2",rep_label_all,0,admin1_geo_id_df) -->
+<!-- fig_map <- tidy_map(fig_map) -->
 
-mapshot(fig_map, file = "figures/fig_4c.png",useragent = ZOOM_CONFIG)
-knitr::include_graphics("figures/fig_4c.png")
-```
+<!-- mapshot(fig_map, file = "figures/fig_4c.png",useragent = ZOOM_CONFIG) -->
+<!-- knitr::include_graphics("figures/fig_4c.png") -->
+<!-- ``` -->
 
-\newpage
-#### `r title_name_figure` 4d: `r lang_label("title_figure_4d")`, `r ref_country_name`, `r YEAR_5`.
+<!-- \newpage -->
+#### `r title_name_figure` 4c: `r lang_label("title_figure_4d")`, `r ref_country_name`, `r YEAR_5`.
 ```{r figure_4d, echo=F, out.width="78%"}
 fig_map <- rend_plot_map_data(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,rendimiento_data,"tasa_des_srp1_srp2",rep_label_all,0,admin1_geo_id_df)
 fig_map <- tidy_map(fig_map)
@@ -482,7 +482,7 @@ mapshot(fig_map, file = "figures/fig_4d.png",useragent = ZOOM_CONFIG)
 knitr::include_graphics("figures/fig_4d.png")
 ```
 
-#### `r title_name_figure` 4e: `r lang_label("title_figure_4e")`, `r ref_country_name`, `r YEAR_5`.
+#### `r title_name_figure` 4d: `r lang_label("title_figure_4e")`, `r ref_country_name`, `r YEAR_5`.
 ```{r figure_4e, echo=F, out.width="78%"}
 fig_map <- rend_plot_map_data(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_OFFS,country_shapes,rendimiento_data,"tasa_des_penta1_srp1",rep_label_all,0,admin1_geo_id_df)
 fig_map <- tidy_map(fig_map)
