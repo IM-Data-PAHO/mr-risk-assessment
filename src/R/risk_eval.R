@@ -50,6 +50,27 @@ lang_label <- function(label) {
   return(LANG_TLS$LANG[LANG_TLS$LABEL == label])
 }
 
+get_indicator_risk_level <- function(indicator, risk_points) {
+  rp_LR <- CUT_OFFS$value[CUT_OFFS$RV == indicator & CUT_OFFS$risk_level == "LR"]
+  rp_MD <- CUT_OFFS$value[CUT_OFFS$RV == indicator & CUT_OFFS$risk_level == "MR"]
+  rp_HR <- CUT_OFFS$value[CUT_OFFS$RV == indicator & CUT_OFFS$risk_level == "HR"]
+  rp_VHR <- CUT_OFFS$value[CUT_OFFS$RV == indicator & CUT_OFFS$risk_level == "VHR"]
+  risk_levels <- ifelse(
+    is.na(risk_points), lang_label("no_data"),
+    ifelse(
+      risk_points <= rp_LR, lang_label("LR"),
+      ifelse(
+        risk_points <= rp_MD, lang_label("MR"),
+        ifelse(
+          risk_points <= rp_HR, lang_label("HR"),
+          lang_label("VHR")
+        )
+      )
+    )
+  )
+  return(risk_levels)
+}
+
 rep_label_admin1_name = lang_label("rep_label_admin1_name")
 rep_label_admin1_name_plural = lang_label("rep_label_admin1_name_plural")
 rep_label_admin2_name = lang_label("rep_label_admin2_name")
@@ -770,9 +791,159 @@ calidad_data <- left_join(calidad_data, silent_data) %>%
                                 TRUE ~ "REP")) %>% 
   select(-silent)
 
-# Changes 2024-12-05 ----
-# Added save function for the risk eval results for joint analysis
-rio::export(indicadores_data, "Data/mmr_results.xlsx")
+# Export dashboard tables ------------------------------------------------
+# Changes 2025-02-15 ----
+# Added workbook export for dashboard summary tables
+
+general_immunity_export <- indicadores_data %>%
+  mutate(
+    TOTAL_RISK_LEVEL = get_indicator_risk_level("GENERAL", TOTAL_PR)
+  ) %>%
+  select(
+    ADMIN1,
+    ADMIN2,
+    INMUNIDAD_POB,
+    CALIDAD_VIG,
+    RENDIMIENTO_PROG,
+    EVAL_AMENAZA,
+    RES_RAPIDA,
+    TOTAL_PR,
+    TOTAL_RISK_LEVEL
+  )
+
+colnames(general_immunity_export) <- c(
+  lang_label("table_admin1_name"),
+  lang_label("table_admin2_name"),
+  lang_label("menuitem_inm_pob"),
+  lang_label("menuitem_surv_qual"),
+  lang_label("menuitem_prog_del"),
+  lang_label("menuitem_thre_asse"),
+  lang_label("menuitem_rap_res"),
+  lang_label("risk_points"),
+  lang_label("risk_level")
+)
+
+population_immunity_export <- inmunidad_data %>%
+  mutate(
+    TOTAL_RISK_LEVEL = get_indicator_risk_level("INM_POB", TOTAL_PR),
+    SRP1_year1 = round(SRP1_year1, 0),
+    SRP1_year2 = round(SRP1_year2, 0),
+    SRP1_year3 = round(SRP1_year3, 0),
+    SRP1_year4 = round(SRP1_year4, 0),
+    SRP1_year5 = round(SRP1_year5, 0),
+    SRP2_year1 = round(SRP2_year1, 0),
+    SRP2_year2 = round(SRP2_year2, 0),
+    SRP2_year3 = round(SRP2_year3, 0),
+    SRP2_year4 = round(SRP2_year4, 0),
+    SRP2_year5 = round(SRP2_year5, 0),
+    cob_last_camp = round(cob_last_camp, 0),
+    p_sospechosos_novac = round(p_sospechosos_novac, 1),
+    TOTAL_PR = round(TOTAL_PR, 0)
+  ) %>%
+  select(
+    ADMIN1,
+    ADMIN2,
+    TOTAL_PR,
+    SRP1_year1,
+    SRP1_year2,
+    SRP1_year3,
+    SRP1_year4,
+    SRP1_year5,
+    SRP1_PR,
+    SRP2_year1,
+    SRP2_year2,
+    SRP2_year3,
+    SRP2_year4,
+    SRP2_year5,
+    SRP2_PR,
+    cob_last_camp,
+    cob_last_camp_PR,
+    p_sospechosos_novac,
+    p_sospechosos_novac_PR,
+    TOTAL_RISK_LEVEL
+  )
+
+colnames(population_immunity_export) <- c(
+  lang_label("table_admin1_name"),
+  lang_label("table_admin2_name"),
+  lang_label("total_pr"),
+  paste(lang_label("inm_mmr1_cob"), YEAR_1, "(%)"),
+  paste(lang_label("inm_mmr1_cob"), YEAR_2, "(%)"),
+  paste(lang_label("inm_mmr1_cob"), YEAR_3, "(%)"),
+  paste(lang_label("inm_mmr1_cob"), YEAR_4, "(%)"),
+  paste(lang_label("inm_mmr1_cob"), YEAR_5, "(%)"),
+  lang_label("inm_mmr1_score"),
+  paste(lang_label("inm_mmr2_cob"), YEAR_1, "(%)"),
+  paste(lang_label("inm_mmr2_cob"), YEAR_2, "(%)"),
+  paste(lang_label("inm_mmr2_cob"), YEAR_3, "(%)"),
+  paste(lang_label("inm_mmr2_cob"), YEAR_4, "(%)"),
+  paste(lang_label("inm_mmr2_cob"), YEAR_5, "(%)"),
+  lang_label("inm_mmr2_score"),
+  lang_label("inm_cob_last_camp_pct"),
+  lang_label("inm_cob_last_camp_score"),
+  lang_label("inm_novac_pct"),
+  lang_label("inm_novac_score"),
+  lang_label("risk_level")
+)
+
+quality_of_surveillance_export <- calidad_data %>%
+  mutate(
+    TOTAL_RISK_LEVEL = get_indicator_risk_level("SURV_QUAL", TOTAL_PR),
+    tasa_casos = round(tasa_casos, 1),
+    tasa_casos_PR = round(tasa_casos_PR, 0),
+    p_casos_inv = round(p_casos_inv, 1),
+    p_casos_inv_PR = round(p_casos_inv_PR, 0),
+    p_casos_muestra = round(p_casos_muestra, 1),
+    p_casos_muestra_PR = round(p_casos_muestra_PR, 0),
+    p_muestras_lab = round(p_muestras_lab, 1),
+    p_muestras_lab_PR = round(p_muestras_lab_PR, 0),
+    TOTAL_PR = round(TOTAL_PR, 0)
+  ) %>%
+  select(
+    ADMIN1,
+    ADMIN2,
+    TOTAL_PR,
+    Suspected_Case,
+    Confirmed_Case,
+    POB,
+    tasa_casos,
+    tasa_casos_PR,
+    p_casos_inv,
+    p_casos_inv_PR,
+    p_casos_muestra,
+    p_casos_muestra_PR,
+    p_muestras_lab,
+    p_muestras_lab_PR,
+    TOTAL_RISK_LEVEL
+  )
+
+colnames(quality_of_surveillance_export) <- c(
+  lang_label("table_admin1_name"),
+  lang_label("table_admin2_name"),
+  lang_label("total_pr"),
+  lang_label("surv_table_cases"),
+  lang_label("surv_table_cases_conf"),
+  lang_label("surv_table_pob"),
+  lang_label("surv_table_rate"),
+  lang_label("surv_table_rate_pr"),
+  lang_label("surv_table_adeq_inv"),
+  lang_label("surv_table_adeq_inv_pr"),
+  lang_label("surv_table_adeq_sample"),
+  lang_label("surv_table_adeq_sample_pr"),
+  lang_label("surv_table_timely_lab"),
+  lang_label("surv_table_timely_lab_pr"),
+  lang_label("risk_level")
+)
+
+rio::export(
+  list(
+    general_immunity = general_immunity_export,
+    population_immunity = population_immunity_export,
+    quality_of_surveillance = quality_of_surveillance_export
+  ),
+  "Data/mmr_results.xlsx"
+)
+
 # SAVE ----
 rm(aggregated_cases,cobs_inmunidad,
    calidad_data_join,
