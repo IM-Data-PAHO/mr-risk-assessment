@@ -1367,7 +1367,6 @@ server <- function(input, output, session) {
     output$joint_map <- renderLeaflet({
       map_data <- joint_map_data()
       req(nrow(map_data) > 0)
-      print(joint_risk_levels)
       pal <- colorFactor(palette = joint_palette, domain = joint_risk_levels, levels = joint_risk_levels, na.color = "#666666")
       joint_labels <- ifelse(is.na(map_data$joint_risk_level), "No data", as.character(map_data$joint_risk_level))
       measles_labels <- ifelse(is.na(map_data$measles_risk_level), "No data", as.character(map_data$measles_risk_level))
@@ -1387,7 +1386,6 @@ server <- function(input, output, session) {
         select(ADMIN1_GEO_ID, GEO_ID, ADMIN1, ADMIN2, joint_risk_level, geometry) %>% 
         st_as_sf()
       
-      print(class(map_data))
 
       leaflet(options = leafletOptions(doubleClickZoom = TRUE, attributionControl = FALSE, zoomSnap = 0.1, zoomDelta = 0.1)) %>%
         addProviderTiles(providers$Esri.WorldGrayCanvas) %>%
