@@ -41,13 +41,147 @@ normalize_admin_value <- function(value) {
   return(normalized)
 }
 
+pull_first_available_column <- function(df, candidates, default = NA_character_) {
+  available <- candidates[candidates %in% names(df)]
+  if (length(available) == 0) {
+    if (is.numeric(default) || is.integer(default)) {
+      return(rep(as.numeric(default), nrow(df)))
+    }
+    if (is.logical(default)) {
+      return(rep(default, nrow(df)))
+    }
+    return(rep(as.character(default), nrow(df)))
+  }
+  df[[available[1]]]
+}
+
+joint_admin1_column_candidates <- c(
+  "subnational_level",
+  "nivel_subnacional",
+  "niveau_infranational",
+  "province",
+  "provincia",
+  "departamento",
+  "departement",
+  "estado",
+  "state",
+  "region",
+  "regiao",
+  "admin1",
+  "admin_1"
+)
+
+joint_admin2_column_candidates <- c(
+  "municipality",
+  "municipio",
+  "municipalidad",
+  "municipalite",
+  "districts",
+  "district",
+  "distrito",
+  "departamento",
+  "commune",
+  "comuna",
+  "county",
+  "city",
+  "ciudad",
+  "ville",
+  "localidad",
+  "localite",
+  "prefecture",
+  "admin2",
+  "admin_2"
+)
+
+joint_risk_points_candidates <- c(
+  "total_risk_points",
+  "risk_points",
+  "risk_score",
+  "total_score",
+  "overall_score",
+  "puntos_totales_de_riesgo",
+  "puntos_de_riesgo",
+  "puntaje_total_de_riesgo",
+  "pontos_totais_de_risco",
+  "pontos_de_risco",
+  "pontuacao_total_de_risco",
+  "points_de_risque_totaux",
+  "total_des_points_de_risque"
+)
+
+joint_risk_level_candidates <- c(
+  "risk_level",
+  "risk_category",
+  "risk_classification",
+  "categoria_de_riesgo",
+  "classification_du_risque",
+  "categorie_de_risque",
+  "nivel_de_riesgo",
+  "nivel_de_risco",
+  "niveau_de_risque"
+)
+
+joint_population_immunity_candidates <- c(
+  "population_immunity",
+  "population_immunity_score",
+  "immunity",
+  "immunity_score",
+  "inmunidad_de_la_poblacion",
+  "imunidade_da_populacao",
+  "immunite_de_la_population"
+)
+
+joint_surveillance_quality_candidates <- c(
+  "surveillance_quality",
+  "quality_of_surveillance",
+  "surveillance",
+  "surveillance_score",
+  "calidad_de_la_vigilancia",
+  "qualidade_da_vigilancia",
+  "qualite_de_la_surveillance"
+)
+
+joint_program_delivery_candidates <- c(
+  "program_delivery_performance",
+  "program_delivery",
+  "program_delivery_score",
+  "desempeno_del_programa",
+  "desempeno_programa",
+  "desempenho_do_programa",
+  "performance_du_programme",
+  "performance_du_program"
+)
+
+joint_threat_assessment_candidates <- c(
+  "threat_assessment",
+  "threats",
+  "threat_score",
+  "threats_score",
+  "risk_of_outbreak",
+  "evaluacion_de_la_amenaza",
+  "evaluation_de_la_menace",
+  "avaliacao_da_ameaca"
+)
+
+joint_rapid_response_candidates <- c(
+  "rapid_response",
+  "respuesta_rapida",
+  "resposta_rapida",
+  "reponse_rapide"
+)
+
 standardize_joint_label <- function(x) {
-  lx <- stringr::str_trim(stringr::str_to_lower(ifelse(is.na(x), "", x)))
+  lx <- iconv(x, to = "ASCII//TRANSLIT")
+  lx <- stringr::str_replace_all(lx, "[-_]", " ")
+  lx <- stringr::str_to_lower(lx)
+  lx <- stringr::str_replace_all(lx, "\\s+", " ")
+  lx <- stringr::str_trim(lx)
   dplyr::case_when(
-    lx %in% c("low", "bajo") ~ "Low",
-    lx %in% c("medium", "mediano", "medio") ~ "Medium",
-    lx %in% c("high", "alto") ~ "High",
-    lx %in% c("very high", "muy alto", "muyalto") ~ "Very high",
+    is.na(lx) ~ NA_character_,
+    lx %in% c("low", "bajo", "baja", "baixo", "baixa", "faible", "bas") ~ "Low",
+    lx %in% c("medium", "mediano", "medio", "media", "moyen", "moyenne", "moderate", "moderado", "moderada", "modere", "moderee") ~ "Medium",
+    lx %in% c("high", "alto", "alta", "haut", "haute", "eleve", "elevee", "elevado", "elevada") ~ "High",
+    lx %in% c("very high", "veryhigh", "muy alto", "muy alta", "muyalto", "muyalta", "muito alto", "muito alta", "muitoalto", "muitoalta", "muito elevado", "muito elevada", "tres haut", "tres haute", "tres eleve", "tres elevee", "treseleve", "treselevee") ~ "Very high",
     TRUE ~ NA_character_
   )
 }
@@ -90,6 +224,71 @@ joint_risk_matrix <- tribble(
   "Very high", "Very high", "Very high"
 )
 
+read_joint_component_sheet <- function(file_path, sheet_name, disease_prefix, component_key) {
+  raw <- tryCatch(read_excel(file_path, sheet = sheet_name), error = function(e) NULL)
+  if (is.null(raw)) {
+    return(tibble())
+  }
+  raw <- clean_names(raw)
+  admin1_label <- pull_first_available_column(raw, joint_admin1_column_candidates, default = NA_character_)
+  admin2_label <- pull_first_available_column(raw, joint_admin2_column_candidates, default = NA_character_)
+  admin1_key <- normalize_admin_value(admin1_label)
+  admin2_key <- normalize_admin_value(admin2_label)
+  score_values <- suppressWarnings(as.numeric(pull_first_available_column(raw, joint_risk_points_candidates, default = NA_real_)))
+  risk_raw <- pull_first_available_column(raw, joint_risk_level_candidates, default = NA_character_)
+  risk_levels <- standardize_joint_label(risk_raw)
+  score_col <- paste0(disease_prefix, "_", component_key, "_score")
+  level_col <- paste0(disease_prefix, "_", component_key, "_risk_level")
+  tibble(
+    admin1_key = admin1_key,
+    admin2_key = admin2_key,
+    admin1_label = admin1_label,
+    admin2_label = admin2_label
+  ) %>%
+    mutate(
+      !!score_col := score_values,
+      !!level_col := risk_levels
+    ) %>%
+    filter(
+      !is.na(admin1_key),
+      admin1_key != "",
+      !is.na(admin2_key),
+      admin2_key != ""
+    )
+}
+
+build_joint_component_dataset <- function(measles_df, polio_df, component_key) {
+  if (nrow(measles_df) == 0 || nrow(polio_df) == 0) {
+    return(tibble())
+  }
+  joined <- inner_join(measles_df, polio_df, by = c("admin1_key","admin2_key"), suffix = c("_measles","_polio")) %>%
+    mutate(
+      admin1_label = coalesce(admin1_label_measles, admin1_label_polio),
+      admin2_label = coalesce(admin2_label_measles, admin2_label_polio)
+    ) %>%
+    select(-admin1_label_measles, -admin1_label_polio, -admin2_label_measles, -admin2_label_polio)
+  measles_level_col <- paste0("measles_", component_key, "_risk_level")
+  polio_level_col <- paste0("polio_", component_key, "_risk_level")
+  join_keys <- c(
+    setNames("measles_level", measles_level_col),
+    setNames("polio_level", polio_level_col)
+  )
+  joint_level_col <- paste0("joint_", component_key, "_risk_level")
+  joint_rank_col <- paste0("joint_", component_key, "_rank")
+  level_cols <- c(measles_level_col, polio_level_col)
+  joined <- joined %>%
+    left_join(joint_risk_matrix, by = join_keys) %>%
+    mutate(
+      across(all_of(level_cols), ~factor(., levels = joint_risk_levels))
+    ) %>%
+    mutate(
+      !!joint_level_col := factor(coalesce(.data[["joint_level"]], .data[[measles_level_col]], .data[[polio_level_col]]), levels = joint_risk_levels),
+      !!joint_rank_col := as.integer(.data[[joint_level_col]])
+    ) %>%
+    select(-joint_level)
+  joined
+}
+
 country_shapes <- country_shapes %>%
   mutate(
     ADMIN1_KEY = normalize_admin_value(ADMIN1),
@@ -101,50 +300,176 @@ polio_file_path <- "../../Data/polio_results.xlsx"
 joint_data_available <- file.exists(mmr_file_path) && file.exists(polio_file_path)
 
 if (joint_data_available) {
-  mmr_joint_general <- read_excel(mmr_file_path, sheet = "general_immunity") %>%
-    clean_names() %>%
+  mmr_joint_general_raw <- read_excel(mmr_file_path, sheet = "general_risk") %>%
+    clean_names()
+  
+  mmr_admin1_values <- pull_first_available_column(
+    mmr_joint_general_raw,
+    joint_admin1_column_candidates,
+    default = NA_character_
+  )
+  mmr_admin2_values <- pull_first_available_column(
+    mmr_joint_general_raw,
+    joint_admin2_column_candidates,
+    default = NA_character_
+  )
+  mmr_immunity_values <- suppressWarnings(as.numeric(pull_first_available_column(
+    mmr_joint_general_raw,
+    joint_population_immunity_candidates,
+    default = NA_real_
+  )))
+  mmr_surveillance_values <- suppressWarnings(as.numeric(pull_first_available_column(
+    mmr_joint_general_raw,
+    joint_surveillance_quality_candidates,
+    default = NA_real_
+  )))
+  mmr_program_delivery_values <- suppressWarnings(as.numeric(pull_first_available_column(
+    mmr_joint_general_raw,
+    joint_program_delivery_candidates,
+    default = NA_real_
+  )))
+  mmr_threat_values <- suppressWarnings(as.numeric(pull_first_available_column(
+    mmr_joint_general_raw,
+    joint_threat_assessment_candidates,
+    default = NA_real_
+  )))
+  mmr_rapid_response_values <- suppressWarnings(as.numeric(pull_first_available_column(
+    mmr_joint_general_raw,
+    joint_rapid_response_candidates,
+    default = NA_real_
+  )))
+  mmr_risk_points_values <- suppressWarnings(as.numeric(pull_first_available_column(
+    mmr_joint_general_raw,
+    joint_risk_points_candidates,
+    default = NA_real_
+  )))
+  mmr_risk_raw <- pull_first_available_column(
+    mmr_joint_general_raw,
+    joint_risk_level_candidates,
+    default = NA_character_
+  )
+  mmr_risk_levels <- standardize_joint_label(mmr_risk_raw)
+  
+  mmr_joint_general <- mmr_joint_general_raw %>%
     mutate(
-      admin1_label = subnational_level,
-      admin2_label = municipality,
-      admin1_key = normalize_admin_value(subnational_level),
-      admin2_key = normalize_admin_value(municipality),
-      measles_risk_level = standardize_joint_label(risk_level)
+      admin1_label = mmr_admin1_values,
+      admin2_label = mmr_admin2_values,
+      admin1_key = normalize_admin_value(admin1_label),
+      admin2_key = normalize_admin_value(admin2_label),
+      measles_population_immunity = mmr_immunity_values,
+      measles_surveillance_quality = mmr_surveillance_values,
+      measles_program_delivery_performance = mmr_program_delivery_values,
+      measles_threat_assessment = mmr_threat_values,
+      measles_rapid_response = mmr_rapid_response_values,
+      measles_risk_points = mmr_risk_points_values,
+      measles_risk_level = mmr_risk_levels
     ) %>%
     transmute(
       admin1_key,
       admin2_key,
       admin1_label,
       admin2_label,
-      measles_population_immunity = population_immunity,
-      measles_surveillance_quality = surveillance_quality,
-      measles_program_delivery_performance = program_delivery_performance,
-      measles_threat_assessment = threat_assessment,
-      measles_rapid_response = rapid_response,
-      measles_risk_points = risk_points,
+      measles_population_immunity,
+      measles_surveillance_quality,
+      measles_program_delivery_performance,
+      measles_threat_assessment,
+      measles_rapid_response,
+      measles_risk_points,
       measles_risk_level
     )
   
-  polio_joint_general <- read_excel(polio_file_path, sheet = 1) %>%
-    clean_names() %>%
+  polio_joint_general_raw <- tryCatch(
+    read_excel(polio_file_path, sheet = "general_risk"),
+    error = function(e) read_excel(polio_file_path, sheet = 1)
+  ) %>%
+    clean_names()
+  
+  polio_admin1_values <- pull_first_available_column(
+    polio_joint_general_raw,
+    joint_admin1_column_candidates,
+    default = NA_character_
+  )
+  polio_admin2_values <- pull_first_available_column(
+    polio_joint_general_raw,
+    joint_admin2_column_candidates,
+    default = NA_character_
+  )
+  polio_immunity_values <- pull_first_available_column(
+    polio_joint_general_raw,
+    joint_population_immunity_candidates,
+    default = NA_real_
+  )
+  polio_surveillance_values <- pull_first_available_column(
+    polio_joint_general_raw,
+    joint_surveillance_quality_candidates,
+    default = NA_real_
+  )
+  polio_determinants_values <- pull_first_available_column(
+    polio_joint_general_raw,
+    c(
+      "program_delivery_performance",
+      "health_determinants",
+      "determinants_score",
+      "determinants",
+      "determinants_and_threats"
+    ),
+    default = NA_real_
+  )
+  polio_outbreaks_values <- pull_first_available_column(
+    polio_joint_general_raw,
+    c(joint_threat_assessment_candidates, "outbreaks_score", "outbreak_score", "outbreaks", "outbreak"),
+    default = NA_real_
+  )
+  polio_total_values <- pull_first_available_column(
+    polio_joint_general_raw,
+    joint_risk_points_candidates,
+    default = NA_real_
+  )
+  polio_risk_raw <- pull_first_available_column(
+    polio_joint_general_raw,
+    joint_risk_level_candidates,
+    default = NA_character_
+  )
+  polio_risk_levels <- standardize_joint_label(polio_risk_raw)
+  polio_risk_levels <- ifelse(
+    is.na(polio_risk_levels),
+    derive_polio_risk_level(polio_total_values),
+    polio_risk_levels
+  )
+  
+  polio_joint_general <- polio_joint_general_raw %>%
     mutate(
-      admin1_label = admin1,
-      admin2_label = admin2,
-      admin1_key = normalize_admin_value(admin1),
-      admin2_key = normalize_admin_value(admin2),
-      polio_risk_level = derive_polio_risk_level(total_score)
+      admin1_label = polio_admin1_values,
+      admin2_label = polio_admin2_values,
+      admin1_key = normalize_admin_value(admin1_label),
+      admin2_key = normalize_admin_value(admin2_label),
+      polio_immunity_score = polio_immunity_values,
+      polio_surveillance_score = polio_surveillance_values,
+      polio_determinants_score = polio_determinants_values,
+      polio_outbreaks_score = polio_outbreaks_values,
+      polio_total_score = polio_total_values,
+      polio_risk_level = polio_risk_levels
     ) %>%
     transmute(
       admin1_key,
       admin2_key,
       admin1_label,
       admin2_label,
-      polio_immunity_score = immunity_score,
-      polio_surveillance_score = surveillance_score,
-      polio_determinants_score = determinants_score,
-      polio_outbreaks_score = outbreaks_score,
-      polio_total_score = total_score,
+      polio_immunity_score,
+      polio_surveillance_score,
+      polio_determinants_score,
+      polio_outbreaks_score,
+      polio_total_score,
       polio_risk_level
     )
+  
+  mmr_immunity_component <- read_joint_component_sheet(mmr_file_path, "population_immunity", "measles", "immunity")
+  polio_immunity_component <- read_joint_component_sheet(polio_file_path, "population_immunity", "polio", "immunity")
+  joint_immunity_data <- build_joint_component_dataset(mmr_immunity_component, polio_immunity_component, "immunity")
+  
+  mmr_surveillance_component <- read_joint_component_sheet(mmr_file_path, "quality_of_surveillance", "measles", "surveillance")
+  polio_surveillance_component <- read_joint_component_sheet(polio_file_path, "quality_of_surveillance", "polio", "surveillance")
+  joint_surveillance_data <- build_joint_component_dataset(mmr_surveillance_component, polio_surveillance_component, "surveillance")
   
   joint_base_data <- inner_join(mmr_joint_general, polio_joint_general, by = c("admin1_key","admin2_key"), suffix = c("_measles","_polio")) %>%
     mutate(
@@ -195,6 +520,19 @@ if (joint_data_available) {
   joint_admin_lookup <- tibble()
   joint_admin_choices <- c()
   joint_admin_default <- NULL
+  joint_immunity_data <- tibble()
+  joint_surveillance_data <- tibble()
+}
+
+joint_component_data_lookup <- list()
+joint_component_options <- character()
+if (joint_data_available && nrow(joint_immunity_data) > 0) {
+  joint_component_data_lookup$immunity <- joint_immunity_data
+  joint_component_options <- c(joint_component_options, "immunity")
+}
+if (joint_data_available && nrow(joint_surveillance_data) > 0) {
+  joint_component_data_lookup$surveillance <- joint_surveillance_data
+  joint_component_options <- c(joint_component_options, "surveillance")
 }
 # FUNCS ----
 get_a1_geo_id <- function(admin1) {
@@ -203,6 +541,42 @@ get_a1_geo_id <- function(admin1) {
 
 lang_label <- function(label) {
   return(LANG_TLS$LANG[LANG_TLS$LABEL == label])
+}
+
+joint_admin_all_label <- as.character(lang_label("rep_label_all"))
+if (length(joint_admin_all_label) == 0) {
+  joint_admin_all_label <- "ALL"
+} else {
+  joint_admin_all_label <- toupper(joint_admin_all_label[1])
+  if (is.na(joint_admin_all_label) || joint_admin_all_label == "") {
+    joint_admin_all_label <- "ALL"
+  }
+}
+if (length(joint_admin_choices) > 0) {
+  all_idx <- joint_admin_choices == "ALL"
+  if (any(all_idx)) {
+    names(joint_admin_choices)[all_idx] <- joint_admin_all_label
+  }
+}
+
+joint_component_label_lookup <- c(
+  immunity = lang_label("menuitem_inm_pob"),
+  surveillance = lang_label("menuitem_surv_qual")
+)
+joint_component_choices <- c()
+if ("immunity" %in% joint_component_options) {
+  joint_component_choices <- c(joint_component_choices, setNames("immunity", joint_component_label_lookup[["immunity"]]))
+}
+if ("surveillance" %in% joint_component_options) {
+  joint_component_choices <- c(joint_component_choices, setNames("surveillance", joint_component_label_lookup[["surveillance"]]))
+}
+joint_component_default <- if (length(joint_component_choices) > 0) joint_component_choices[[1]] else NULL
+joint_component_section_available <- length(joint_component_choices) > 0
+
+tabItems_safe <- function(...) {
+  items <- list(...)
+  items <- Filter(function(x) !is.null(x), items)
+  do.call(shinydashboard::tabItems, items)
 }
 
 # TITLES ----
@@ -392,13 +766,13 @@ ui <- fluidPage(
             ),
             if (joint_data_available) {
               tagList(
-                menuItem("Measles, rubella and polio joint risk",
+                menuItem(lang_label("menuitem_joint_risk"),
                          tabName = "joint_risk",
                          icon = icon("layer-group")
                 ),
                 conditionalPanel(
                   'input.sidebarid == "joint_risk"',
-                  selectInput("joint_admin_filter", label = "Subnational level:", choices = joint_admin_choices, selected = joint_admin_default)
+                  selectInput("joint_admin_filter", label = paste0(lang_label("rep_label_admin1_name"),":"), choices = joint_admin_choices, selected = joint_admin_default)
                 )
               )
             }
@@ -412,7 +786,7 @@ ui <- fluidPage(
         # CSS ----
         tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "style.css")),
         
-        tabItems(
+        tabItems_safe(
           
           # Tab GENERAL IND ----
           tabItem(tabName = "GENERAL",
@@ -503,7 +877,7 @@ ui <- fluidPage(
           
           if (joint_data_available) {
             tabItem(tabName = "joint_risk",
-                    h2("Joint Risk Overview"),
+                    h2(lang_label("joint_overview_title")),
                     br(),
                     fluidRow(
                       valueBoxOutput("joint_box_low", width = 3),
@@ -531,10 +905,49 @@ ui <- fluidPage(
                       box(width = 12,
                           solidHeader = TRUE,
                           collapsible = TRUE,
-                          title = "Joint assessment table",
+                          title = lang_label("joint_table_title"),
                           shinycssloaders::withSpinner(dataTableOutput("joint_data_table"), color = "#1c9ad6", type = "8", size = 0.5)
                       )
-                    )
+                    ),
+                    if (joint_component_section_available) {
+                      tagList(
+                        br(),
+                        hr(),
+                        h3(lang_label("joint_component_section_title")),
+                        fluidRow(
+                          column(width = 5,
+                                 selectInput(
+                                   "joint_detail_metric",
+                                   paste0(lang_label("joint_component_select"),":"),
+                                   choices = joint_component_choices,
+                                   selected = joint_component_default
+                                 )
+                          )
+                        ),
+                        fluidRow(
+                          box(width = 7,
+                              solidHeader = TRUE,
+                              collapsible = TRUE,
+                              title = textOutput("joint_detail_map_title"),
+                              shinycssloaders::withSpinner(leafletOutput("joint_detail_map", height = 600), color = "#1c9ad6", type = "8", size = 0.5)
+                          ),
+                          box(width = 5,
+                              solidHeader = TRUE,
+                              collapsible = TRUE,
+                              title = textOutput("joint_detail_bar_title"),
+                              shinycssloaders::withSpinner(plotlyOutput("joint_detail_barplot", height = 600), color = "#1c9ad6", type = "8", size = 0.5)
+                          )
+                        ),
+                        fluidRow(
+                          box(width = 12,
+                              solidHeader = TRUE,
+                              collapsible = TRUE,
+                              title = textOutput("joint_detail_table_title"),
+                              shinycssloaders::withSpinner(dataTableOutput("joint_detail_table"), color = "#1c9ad6", type = "8", size = 0.5)
+                          )
+                        )
+                      )
+                    }
             )
           },
           
@@ -1230,7 +1643,7 @@ server <- function(input, output, session) {
   if (joint_data_available) {
     joint_admin_label <- function(value) {
       if (is.null(value) || value == "ALL") {
-        return("All subnational levels")
+        return(joint_admin_all_label)
       }
       label <- joint_admin_lookup$admin1_label[joint_admin_lookup$admin1_key == value]
       ifelse(length(label) == 0, value, label)
@@ -1305,17 +1718,17 @@ server <- function(input, output, session) {
 
     
     output$joint_map_title <- renderText({
-      paste("Joint risk map -", joint_admin_label(input$joint_admin_filter))
+      sprintf(lang_label("joint_map_title"), joint_admin_label(input$joint_admin_filter))
     })
     
     output$joint_bar_title <- renderText({
-      paste("Risk level distribution -", joint_admin_label(input$joint_admin_filter))
+      sprintf(lang_label("joint_distribution_title"), joint_admin_label(input$joint_admin_filter))
     })
     
     output$joint_box_low <- renderValueBox({
       summary <- joint_value_summary()
       low_value <- get_joint_count(summary$counts, "Low")
-      subtitle <- paste("Low-risk municipalities -", joint_box_location())
+      subtitle <- sprintf(lang_label("joint_valuebox_low"), joint_box_location())
       valueBox(
         VB_style(get_box_text(low_value, summary$total, "LR"),"font-size: 90%;"),
         VB_style(subtitle,"font-size: 95%;"),
@@ -1328,7 +1741,7 @@ server <- function(input, output, session) {
     output$joint_box_medium <- renderValueBox({
       summary <- joint_value_summary()
       medium_value <- get_joint_count(summary$counts, "Medium")
-      subtitle <- paste("Medium-risk municipalities -", joint_box_location())
+      subtitle <- sprintf(lang_label("joint_valuebox_medium"), joint_box_location())
       valueBox(
         VB_style(get_box_text(medium_value, summary$total, "MR"),"font-size: 90%;"),
         VB_style(subtitle,"font-size: 95%;"),
@@ -1341,7 +1754,7 @@ server <- function(input, output, session) {
     output$joint_box_high <- renderValueBox({
       summary <- joint_value_summary()
       high_value <- get_joint_count(summary$counts, "High")
-      subtitle <- paste("High-risk municipalities -", joint_box_location())
+      subtitle <- sprintf(lang_label("joint_valuebox_high"), joint_box_location())
       valueBox(
         VB_style(get_box_text(high_value, summary$total, "HR"),"font-size: 90%;"),
         VB_style(subtitle,"font-size: 95%;"),
@@ -1354,7 +1767,7 @@ server <- function(input, output, session) {
     output$joint_box_very_high <- renderValueBox({
       summary <- joint_value_summary()
       very_high_value <- get_joint_count(summary$counts, "Very high")
-      subtitle <- paste("Very high-risk municipalities -", joint_box_location())
+      subtitle <- sprintf(lang_label("joint_valuebox_very_high"), joint_box_location())
       valueBox(
         VB_style(get_box_text(very_high_value, summary$total, "VHR"),"font-size: 90%;"),
         VB_style(subtitle,"font-size: 95%;"),
@@ -1368,16 +1781,19 @@ server <- function(input, output, session) {
       map_data <- joint_map_data()
       req(nrow(map_data) > 0)
       pal <- colorFactor(palette = joint_palette, domain = joint_risk_levels, levels = joint_risk_levels, na.color = "#666666")
-      joint_labels <- ifelse(is.na(map_data$joint_risk_level), "No data", as.character(map_data$joint_risk_level))
-      measles_labels <- ifelse(is.na(map_data$measles_risk_level), "No data", as.character(map_data$measles_risk_level))
-      polio_labels <- ifelse(is.na(map_data$polio_risk_level), "No data", as.character(map_data$polio_risk_level))
-      
+      no_data_label <- lang_label("no_data")
+      joint_labels <- ifelse(is.na(map_data$joint_risk_level), no_data_label, as.character(map_data$joint_risk_level))
+      measles_labels <- ifelse(is.na(map_data$measles_risk_level), no_data_label, as.character(map_data$measles_risk_level))
+      polio_labels <- ifelse(is.na(map_data$polio_risk_level), no_data_label, as.character(map_data$polio_risk_level))
       shape_label <- sprintf(
-        "<strong>%s</strong>, %s<br/>Joint: %s<br/>Measles: %s<br/>Polio: %s",
+        "<strong>%s</strong>, %s<br/>%s: %s<br/>%s: %s<br/>%s: %s",
         map_data$ADMIN2,
         map_data$ADMIN1,
+        lang_label("joint_label_joint"),
         joint_labels,
+        lang_label("joint_label_measles"),
         measles_labels,
+        lang_label("joint_label_polio"),
         polio_labels
       ) %>% lapply(HTML)
 
@@ -1409,7 +1825,7 @@ server <- function(input, output, session) {
           )
         ) %>%
         addLegend(
-          title = "Joint risk level",
+          title = lang_label("joint_risk_level_title"),
           colors = joint_palette[rev(joint_risk_levels)],
           labels = rev(joint_risk_levels),
           opacity = 0.7,
@@ -1431,7 +1847,7 @@ server <- function(input, output, session) {
       ) %>%
         layout(
           xaxis = list(title = "", tickfont = list(size = 12)),
-          yaxis = list(title = "Number of municipalities", tickfont = list(size = 12)),
+          yaxis = list(title = lang_label("joint_num_municipalities"), tickfont = list(size = 12)),
           showlegend = FALSE,
           margin = list(l = 40, r = 20, t = 30, b = 60)
         ) %>%
@@ -1439,15 +1855,22 @@ server <- function(input, output, session) {
     })
     
     output$joint_data_table <- renderDataTable(server = FALSE,{
+      admin1_col <- lang_label("joint_table_admin1")
+      admin2_col <- lang_label("joint_table_admin2")
+      measles_points_col <- lang_label("joint_table_measles_points")
+      measles_level_col <- lang_label("joint_table_measles_level")
+      polio_score_col <- lang_label("joint_table_polio_score")
+      polio_level_col <- lang_label("joint_table_polio_level")
+      joint_level_col_name <- lang_label("joint_risk_level_title")
       dat <- joint_filtered_data() %>%
         transmute(
-          `Subnational level` = admin1_label,
-          Municipality = admin2_label,
-          `Measles risk points` = measles_risk_points,
-          `Measles risk level` = as.character(measles_risk_level),
-          `Polio score` = polio_total_score,
-          `Polio risk level` = as.character(polio_risk_level),
-          `Joint risk level` = as.character(joint_risk_level)
+          !!admin1_col := admin1_label,
+          !!admin2_col := admin2_label,
+          !!measles_points_col := measles_risk_points,
+          !!measles_level_col := as.character(measles_risk_level),
+          !!polio_score_col := polio_total_score,
+          !!polio_level_col := as.character(polio_risk_level),
+          !!joint_level_col_name := as.character(joint_risk_level)
         )
       
       datatable(
@@ -1462,7 +1885,7 @@ server <- function(input, output, session) {
         )
       ) %>%
         formatStyle(
-          "Joint risk level",
+          joint_level_col_name,
           backgroundColor = styleEqual(
             joint_risk_levels,
             joint_palette[joint_risk_levels]
@@ -1470,6 +1893,225 @@ server <- function(input, output, session) {
           color = "black"
         )
     })
+    
+    if (joint_component_section_available) {
+      joint_component_display_label <- function(key) {
+        label <- joint_component_label_lookup[[key]]
+        if (is.null(label) || is.na(label) || label == "") {
+          return(stringr::str_to_title(key))
+        }
+        label
+      }
+      
+      joint_component_filtered_data <- reactive({
+        req(length(joint_component_data_lookup) > 0)
+        available_keys <- names(joint_component_data_lookup)
+        req(length(available_keys) > 0)
+        selected_key <- input$joint_detail_metric
+        if (is.null(selected_key) || !(selected_key %in% available_keys)) {
+          selected_key <- available_keys[1]
+        }
+        dat <- joint_component_data_lookup[[selected_key]]
+        req(!is.null(dat))
+        selected_admin <- input$joint_admin_filter
+        if (!is.null(selected_admin) && selected_admin != "ALL") {
+          dat <- dat %>% filter(admin1_key == selected_admin)
+        }
+        list(
+          key = selected_key,
+          data = dat %>% distinct(admin1_key, admin2_key, .keep_all = TRUE)
+        )
+      })
+      
+      joint_component_counts <- reactive({
+        info <- joint_component_filtered_data()
+        joint_level_col <- paste0("joint_", info$key, "_risk_level")
+        counts <- info$data %>%
+          mutate(level = as.character(.data[[joint_level_col]])) %>%
+          count(level, name = "n")
+        tibble(level = joint_risk_levels) %>%
+          left_join(counts, by = "level") %>%
+          mutate(
+            n = replace_na(n, 0L),
+            level = factor(level, levels = joint_risk_levels)
+          )
+      })
+      
+      joint_component_map_data <- reactive({
+        info <- joint_component_filtered_data()
+        shapes <- country_shapes
+        selected_admin <- input$joint_admin_filter
+        if (!is.null(selected_admin) && selected_admin != "ALL") {
+          shapes <- shapes %>% filter(ADMIN1_KEY == selected_admin)
+        }
+        shapes <- shapes %>%
+          left_join(info$data, by = c("ADMIN1_KEY" = "admin1_key","ADMIN2_KEY" = "admin2_key"))
+        list(
+          key = info$key,
+          data = shapes
+        )
+      })
+      
+      output$joint_detail_map_title <- renderText({
+        info <- joint_component_filtered_data()
+        component_label <- joint_component_display_label(info$key)
+        sprintf(
+          lang_label("joint_component_map_title"),
+          component_label,
+          joint_admin_label(input$joint_admin_filter)
+        )
+      })
+      
+      output$joint_detail_bar_title <- renderText({
+        info <- joint_component_filtered_data()
+        component_label <- joint_component_display_label(info$key)
+        sprintf(
+          lang_label("joint_component_distribution_title"),
+          component_label,
+          joint_admin_label(input$joint_admin_filter)
+        )
+      })
+      
+      output$joint_detail_table_title <- renderText({
+        info <- joint_component_filtered_data()
+        component_label <- joint_component_display_label(info$key)
+        sprintf(
+          lang_label("joint_component_table_title"),
+          component_label,
+          joint_admin_label(input$joint_admin_filter)
+        )
+      })
+      
+      output$joint_detail_map <- renderLeaflet({
+        map_info <- joint_component_map_data()
+        map_data <- map_info$data
+        key <- map_info$key
+        joint_level_col <- paste0("joint_", key, "_risk_level")
+        measles_level_col <- paste0("measles_", key, "_risk_level")
+        polio_level_col <- paste0("polio_", key, "_risk_level")
+        req(joint_level_col %in% names(map_data))
+        req(nrow(map_data) > 0)
+        pal <- colorFactor(palette = joint_palette, domain = joint_risk_levels, levels = joint_risk_levels, na.color = "#666666")
+        no_data_label <- lang_label("no_data")
+        joint_labels <- ifelse(is.na(map_data[[joint_level_col]]), no_data_label, as.character(map_data[[joint_level_col]]))
+        measles_labels <- ifelse(is.na(map_data[[measles_level_col]]), no_data_label, as.character(map_data[[measles_level_col]]))
+        polio_labels <- ifelse(is.na(map_data[[polio_level_col]]), no_data_label, as.character(map_data[[polio_level_col]]))
+        component_label <- joint_component_display_label(key)
+        shape_label <- sprintf(
+          "<strong>%s</strong>, %s<br/>%s %s: %s<br/>%s: %s<br/>%s: %s",
+          map_data$ADMIN2,
+          map_data$ADMIN1,
+          lang_label("joint_label_joint"),
+          component_label,
+          joint_labels,
+          lang_label("joint_label_measles"),
+          measles_labels,
+          lang_label("joint_label_polio"),
+          polio_labels
+        ) %>% lapply(HTML)
+        map_sf <- map_data %>%
+          ungroup() %>%
+          select(ADMIN1_GEO_ID, GEO_ID, ADMIN1, ADMIN2, all_of(joint_level_col), geometry) %>%
+          rename(joint_display = all_of(joint_level_col)) %>%
+          st_as_sf()
+        leaflet(options = leafletOptions(doubleClickZoom = TRUE, attributionControl = FALSE, zoomSnap = 0.1, zoomDelta = 0.1)) %>%
+          addProviderTiles(providers$Esri.WorldGrayCanvas) %>%
+          addPolygons(data = map_sf,
+            fillColor   = ~pal(joint_display),
+            fillOpacity = 0.7,
+            weight      = 1,
+            color       = "#333333",
+            opacity     = 1,
+            highlight = highlightOptions(
+              weight = 2,
+              color = "#333333",
+              fillOpacity = 1,
+              bringToFront = TRUE
+            ),
+            label = shape_label,
+            labelOptions = labelOptions(
+              style = list("font-weight" = "normal", padding = "3px 8px"),
+              textsize = "15px",
+              direction = "auto"
+            )
+          ) %>%
+          addLegend(
+            title = sprintf(lang_label("joint_component_joint_level"), component_label),
+            colors = joint_palette[rev(joint_risk_levels)],
+            labels = rev(joint_risk_levels),
+            opacity = 0.7,
+            position = 'topright'
+          )
+      })
+      
+      output$joint_detail_barplot <- renderPlotly({
+        counts_tbl <- joint_component_counts()
+        plot_ly(
+          counts_tbl,
+          x = ~level,
+          y = ~n,
+          type = "bar",
+          color = ~level,
+          colors = joint_palette[joint_risk_levels],
+          text = ~n,
+          textposition = "outside"
+        ) %>%
+        layout(
+          xaxis = list(title = "", tickfont = list(size = 12)),
+          yaxis = list(title = lang_label("joint_num_municipalities"), tickfont = list(size = 12)),
+            showlegend = FALSE,
+            margin = list(l = 40, r = 20, t = 30, b = 60)
+          ) %>%
+          config(displaylogo = FALSE)
+      })
+      
+      output$joint_detail_table <- renderDataTable(server = FALSE,{
+        info <- joint_component_filtered_data()
+        key <- info$key
+        component_label <- joint_component_display_label(key)
+        measles_score_col <- paste0("measles_", key, "_score")
+        measles_level_col <- paste0("measles_", key, "_risk_level")
+        polio_score_col <- paste0("polio_", key, "_score")
+        polio_level_col <- paste0("polio_", key, "_risk_level")
+        joint_level_col <- paste0("joint_", key, "_risk_level")
+        admin1_col <- lang_label("joint_table_admin1")
+        admin2_col <- lang_label("joint_table_admin2")
+        measles_score_label <- sprintf(lang_label("joint_component_measles_score"), component_label)
+        measles_level_label <- sprintf(lang_label("joint_component_measles_level"), component_label)
+        polio_score_label <- sprintf(lang_label("joint_component_polio_score"), component_label)
+        polio_level_label <- sprintf(lang_label("joint_component_polio_level"), component_label)
+        joint_level_label <- sprintf(lang_label("joint_component_joint_level"), component_label)
+        dat <- info$data %>%
+          transmute(
+            !!admin1_col := admin1_label,
+            !!admin2_col := admin2_label,
+            !!measles_score_label := .data[[measles_score_col]],
+            !!measles_level_label := as.character(.data[[measles_level_col]]),
+            !!polio_score_label := .data[[polio_score_col]],
+            !!polio_level_label := as.character(.data[[polio_level_col]]),
+            !!joint_level_label := as.character(.data[[joint_level_col]])
+          )
+        datatable(
+          dat,
+          rownames = FALSE,
+          extensions = 'Buttons',
+          options = list(
+            dom = 'Bfrtip',
+            buttons = c('copy','csv','excel'),
+            pageLength = 10,
+            scrollX = TRUE
+          )
+        ) %>%
+          formatStyle(
+            joint_level_label,
+            backgroundColor = styleEqual(
+              joint_risk_levels,
+              joint_palette[joint_risk_levels]
+            ),
+            color = "black"
+          )
+      })
+    }
   }
   
   # SERVER INM_POB ----

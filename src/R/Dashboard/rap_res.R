@@ -26,7 +26,7 @@ resrapida_plot_map_data <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIS
   
   map_data$`ADMIN1 GEO_ID`[is.na(map_data$`ADMIN1 GEO_ID`) & map_data$ADMIN1 == admin1] <- admin1_geo_id_df$`ADMIN1 GEO_ID`[admin1_geo_id_df$ADMIN1 == admin1]
   
-  map_data <- map_data %>% rename("var"=var_to_summarise)
+  map_data <- map_data %>% rename(var = all_of(var_to_summarise))
   
   if (admin1_id == 0) {
     map_data <- map_data %>% select(GEO_ID,ADMIN1,ADMIN2,var,geometry,GEO_ID)
@@ -388,4 +388,3 @@ resrapida_get_data_table <- function(LANG_TLS,CUT_OFFS,data,admin1_id) {
   
   return(datos_table)
 }
-

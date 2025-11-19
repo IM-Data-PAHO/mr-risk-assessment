@@ -795,7 +795,7 @@ calidad_data <- left_join(calidad_data, silent_data) %>%
 # Changes 2025-02-15 ----
 # Added workbook export for dashboard summary tables
 
-general_immunity_export <- indicadores_data %>%
+general_risk_export <- indicadores_data %>%
   mutate(
     TOTAL_RISK_LEVEL = get_indicator_risk_level("GENERAL", TOTAL_PR)
   ) %>%
@@ -809,9 +809,9 @@ general_immunity_export <- indicadores_data %>%
     RES_RAPIDA,
     TOTAL_PR,
     TOTAL_RISK_LEVEL
-  )
+)
 
-colnames(general_immunity_export) <- c(
+colnames(general_risk_export) <- c(
   lang_label("table_admin1_name"),
   lang_label("table_admin2_name"),
   lang_label("menuitem_inm_pob"),
@@ -937,7 +937,7 @@ colnames(quality_of_surveillance_export) <- c(
 
 rio::export(
   list(
-    general_immunity = general_immunity_export,
+    general_risk = general_risk_export,
     population_immunity = population_immunity_export,
     quality_of_surveillance = quality_of_surveillance_export
   ),
