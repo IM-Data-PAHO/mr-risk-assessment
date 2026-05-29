@@ -58,6 +58,7 @@ pull_first_available_column <- function(df, candidates, default = NA_character_)
 joint_admin1_column_candidates <- c(
   "subnational_level",
   "nivel_subnacional",
+  "nivel_subnacional_estadual",
   "niveau_infranational",
   "province",
   "provincia",
@@ -100,13 +101,17 @@ joint_risk_points_candidates <- c(
   "total_score",
   "overall_score",
   "puntos_totales_de_riesgo",
+  "total_de_puntos_de_riesgo",
   "puntos_de_riesgo",
   "puntaje_total_de_riesgo",
   "pontos_totais_de_risco",
+  "total_de_pontos_de_risco",
   "pontos_de_risco",
   "pontuacao_total_de_risco",
   "points_de_risque_totaux",
-  "total_des_points_de_risque"
+  "points_de_risque",
+  "total_des_points_de_risque",
+  "total_de_points_de_risque"
 )
 
 joint_risk_level_candidates <- c(
