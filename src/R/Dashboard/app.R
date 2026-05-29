@@ -13,6 +13,7 @@ library(shiny)
 library(shinydashboard)
 library(shinyBS)
 library(shinycssloaders)
+library(shinyjs)
 library(fontawesome)
 library(plotly)
 library(leaflet)
@@ -33,6 +34,11 @@ webshot::install_phantomjs(version = "2.1.1", force = TRUE)
 }
 # LOAD DATA ----
 load(file = "SR_BD.RData")
+# Reload translations fresh from source so new keys are always available
+# without needing to re-run risk_eval.R
+LANG_TLS <- readxl::read_excel("../translations.xlsx", sheet = "DASHBOARD") %>%
+  dplyr::select(LABEL, dplyr::all_of(LANG))
+colnames(LANG_TLS) <- c("LABEL", "LANG")
 
 # JOINT RISK DATA ----
 normalize_admin_value <- function(value) {
@@ -548,6 +554,110 @@ lang_label <- function(label) {
   return(LANG_TLS$LANG[LANG_TLS$LABEL == label])
 }
 
+# JOINT PEDAGOGY TEXT ----
+# All text variables that require lang_label — defined here after lang_label is available
+
+joint_intro_html <- HTML(paste0("<p style='margin-bottom:8px;'>", lang_label("joint_intro_body"), "</p>"))
+joint_component_intro_html <- HTML(paste0("<p>", lang_label("joint_component_intro_body"), "</p>"))
+
+joint_scale_title <- lang_label("joint_scale_title")
+joint_scale_note  <- lang_label("joint_scale_note")
+joint_mr_label    <- lang_label("joint_mr_label")
+joint_cat_label   <- lang_label("joint_cat_label")
+joint_pts_label   <- lang_label("joint_pts_label")
+
+jt_lr  <- lang_label("LR")
+jt_mr  <- lang_label("MR")
+jt_hr  <- lang_label("HR")
+jt_vhr <- lang_label("VHR")
+
+joint_scale_table_html <- HTML(paste0(
+  "<p style='font-size:12px;color:#555;margin-bottom:8px;'>", joint_scale_note, "</p>",
+  "<div style='display:flex;gap:24px;flex-wrap:wrap;'>",
+  "<div>",
+  "<p style='font-weight:bold;margin-bottom:4px;text-align:center;'>", joint_mr_label, "</p>",
+  "<table style='border-collapse:collapse;font-size:13px;width:100%;'>",
+  "<thead><tr>",
+  "<th style='border:1px solid #ccc;padding:4px 10px;background:#f5f5f5;'>", joint_cat_label, "</th>",
+  "<th style='border:1px solid #ccc;padding:4px 10px;background:#f5f5f5;'>", joint_pts_label, "</th>",
+  "</tr></thead><tbody>",
+  "<tr><td style='border:1px solid #ccc;padding:4px 10px;background:#92d050;'>",             jt_lr,  "</td><td style='border:1px solid #ccc;padding:4px 10px;'>&lt; 25</td></tr>",
+  "<tr><td style='border:1px solid #ccc;padding:4px 10px;background:#fec000;'>",             jt_mr,  "</td><td style='border:1px solid #ccc;padding:4px 10px;'>25 – 50</td></tr>",
+  "<tr><td style='border:1px solid #ccc;padding:4px 10px;background:#e8132b;color:#fff;'>",  jt_hr,  "</td><td style='border:1px solid #ccc;padding:4px 10px;'>50 – 74</td></tr>",
+  "<tr><td style='border:1px solid #ccc;padding:4px 10px;background:#920000;color:#fff;'>",  jt_vhr, "</td><td style='border:1px solid #ccc;padding:4px 10px;'>74 – 100</td></tr>",
+  "</tbody></table></div>",
+  "<div>",
+  "<p style='font-weight:bold;margin-bottom:4px;text-align:center;'>Polio</p>",
+  "<table style='border-collapse:collapse;font-size:13px;width:100%;'>",
+  "<thead><tr>",
+  "<th style='border:1px solid #ccc;padding:4px 10px;background:#f5f5f5;'>", joint_cat_label, "</th>",
+  "<th style='border:1px solid #ccc;padding:4px 10px;background:#f5f5f5;'>", joint_pts_label, "</th>",
+  "</tr></thead><tbody>",
+  "<tr><td style='border:1px solid #ccc;padding:4px 10px;background:#92d050;'>",             jt_lr,  "</td><td style='border:1px solid #ccc;padding:4px 10px;'>&lt; 35</td></tr>",
+  "<tr><td style='border:1px solid #ccc;padding:4px 10px;background:#fec000;'>",             jt_mr,  "</td><td style='border:1px solid #ccc;padding:4px 10px;'>35 – 48</td></tr>",
+  "<tr><td style='border:1px solid #ccc;padding:4px 10px;background:#e8132b;color:#fff;'>",  jt_hr,  "</td><td style='border:1px solid #ccc;padding:4px 10px;'>49 – 60</td></tr>",
+  "<tr><td style='border:1px solid #ccc;padding:4px 10px;background:#920000;color:#fff;'>",  jt_vhr, "</td><td style='border:1px solid #ccc;padding:4px 10px;'>60 – 112</td></tr>",
+  "</tbody></table></div>",
+  "</div>"
+))
+
+joint_matrix_title    <- lang_label("joint_matrix_title")
+joint_matrix_note     <- lang_label("joint_matrix_note")
+joint_mr_col_label    <- paste0(joint_mr_label, " ↓")
+
+joint_matrix_html <- HTML(paste0(
+  "<p style='font-size:12px;color:#555;margin-bottom:10px;'>", joint_matrix_note, "</p>",
+  "<div style='overflow-x:auto;'>",
+  "<table style='border-collapse:collapse;font-size:12px;text-align:center;'>",
+  "<thead><tr>",
+  "<th style='border:1px solid #ccc;padding:6px 10px;background:#f5f5f5;'>", joint_mr_col_label, " / Polio →", "</th>",
+  "<th style='border:1px solid #ccc;padding:6px 14px;background:#92d050;'>",             jt_lr,  "</th>",
+  "<th style='border:1px solid #ccc;padding:6px 14px;background:#fec000;'>",             jt_mr,  "</th>",
+  "<th style='border:1px solid #ccc;padding:6px 14px;background:#e8132b;color:#fff;'>",  jt_hr,  "</th>",
+  "<th style='border:1px solid #ccc;padding:6px 14px;background:#920000;color:#fff;'>",  jt_vhr, "</th>",
+  "</tr></thead><tbody>",
+  "<tr><td style='border:1px solid #ccc;padding:5px 10px;background:#92d050;font-weight:bold;'>",            jt_lr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#92d050;'>",             jt_lr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#fec000;'>",             jt_mr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#fec000;'>",             jt_mr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#e8132b;color:#fff;'>",  jt_hr,  "</td></tr>",
+  "<tr><td style='border:1px solid #ccc;padding:5px 10px;background:#fec000;font-weight:bold;'>",            jt_mr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#fec000;'>",             jt_mr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#fec000;'>",             jt_mr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#e8132b;color:#fff;'>",  jt_hr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#e8132b;color:#fff;'>",  jt_hr,  "</td></tr>",
+  "<tr><td style='border:1px solid #ccc;padding:5px 10px;background:#e8132b;color:#fff;font-weight:bold;'>", jt_hr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#fec000;'>",             jt_mr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#e8132b;color:#fff;'>",  jt_hr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#e8132b;color:#fff;'>",  jt_hr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#920000;color:#fff;'>",  jt_vhr, "</td></tr>",
+  "<tr><td style='border:1px solid #ccc;padding:5px 10px;background:#920000;color:#fff;font-weight:bold;'>", jt_vhr, "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#e8132b;color:#fff;'>",  jt_hr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#e8132b;color:#fff;'>",  jt_hr,  "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#920000;color:#fff;'>",  jt_vhr, "</td>",
+  "<td style='border:1px solid #ccc;padding:5px 14px;background:#920000;color:#fff;'>",  jt_vhr, "</td></tr>",
+  "</tbody></table></div>"
+))
+
+joint_summary_tab_label <- lang_label("joint_summary_tab_label")
+joint_chart_tab_label   <- lang_label("joint_chart_tab_label")
+
+# Display labels: internal English key → translated label for UI output
+# Internal data always stays English (required for risk matrix joins and factor ordering)
+joint_level_display <- c(
+  "Low"       = lang_label("LR"),
+  "Medium"    = lang_label("MR"),
+  "High"      = lang_label("HR"),
+  "Very high" = lang_label("VHR")
+)
+# Palette keyed by translated labels (for plotly colors / legend labels)
+joint_palette_display <- setNames(unname(joint_palette), unname(joint_level_display))
+
+translate_joint_level <- function(x, no_data_label) {
+  translated <- joint_level_display[as.character(x)]
+  ifelse(is.na(x) | is.na(translated), no_data_label, unname(translated))
+}
+
 joint_admin_all_label <- as.character(lang_label("rep_label_all"))
 if (length(joint_admin_all_label) == 0) {
   joint_admin_all_label <- "ALL"
@@ -577,6 +687,47 @@ if ("surveillance" %in% joint_component_options) {
 }
 joint_component_default <- if (length(joint_component_choices) > 0) joint_component_choices[[1]] else NULL
 joint_component_section_available <- length(joint_component_choices) > 0
+
+# JOINT PEDAGOGY HELPERS ----
+# Helper functions only — all text variables are defined below after lang_label
+
+joint_make_summary_text <- function(counts_tbl, location) {
+  total <- sum(counts_tbl$n)
+  if (total == 0) return(HTML(""))
+  lvls  <- as.character(counts_tbl$level)
+  get_n <- function(l) { v <- counts_tbl$n[lvls == l]; if (length(v) == 0) 0L else v }
+  pct   <- function(n) paste0(sprintf("%.1f", if (total > 0) n / total * 100 else 0), "%")
+  n_lr  <- get_n("Low"); n_mr <- get_n("Medium"); n_hr <- get_n("High"); n_vhr <- get_n("Very high")
+  loc_phrase <- if (nchar(location) == 0) "" else paste0(" ", lang_label("joint_summary_in"), " ", location)
+  txt   <- sprintf(lang_label("joint_summary_text"), total, loc_phrase, n_vhr, pct(n_vhr), n_hr, pct(n_hr), n_mr, pct(n_mr), n_lr, pct(n_lr))
+  HTML(paste0("<p style='font-size:14px; line-height:1.6; margin-bottom:12px;'>", txt, "</p>"))
+}
+
+joint_make_summary_table <- function(counts_tbl) {
+  row_labels <- c(
+    lang_label("joint_level_lr"), lang_label("joint_level_mr"),
+    lang_label("joint_level_hr"), lang_label("joint_level_vhr"),
+    lang_label("joint_total_label")
+  )
+  col_cat <- lang_label("joint_summary_col_cat")
+  col_n   <- lang_label("joint_summary_col_n")
+  col_pct <- lang_label("joint_summary_col_pct")
+  total   <- sum(counts_tbl$n)
+  lvls    <- as.character(counts_tbl$level)
+  get_n   <- function(l) { v <- counts_tbl$n[lvls == l]; if (length(v) == 0) 0L else v }
+  ns      <- c(get_n("Low"), get_n("Medium"), get_n("High"), get_n("Very high"))
+  pcts    <- if (total > 0) sprintf("%.1f%%", ns / total * 100) else rep("0.0%", 4)
+  df <- data.frame(cat = row_labels, n = c(ns, total), pct = c(pcts, "100.0%"), stringsAsFactors = FALSE)
+  colnames(df) <- c(col_cat, col_n, col_pct)
+  bg_colors  <- c("#92d050", "#fec000", "#e8132b", "#920000", "#f5f5f5")
+  txt_colors <- c("black", "black", "white", "white", "black")
+  datatable(df, rownames = FALSE, options = list(dom = 't', pageLength = 5, ordering = FALSE)) %>%
+    formatStyle(col_cat,
+      backgroundColor = styleEqual(row_labels, bg_colors),
+      color           = styleEqual(row_labels, txt_colors),
+      fontWeight      = styleEqual(row_labels[5], "bold")
+    )
+}
 
 tabItems_safe <- function(...) {
   items <- list(...)
@@ -653,6 +804,7 @@ source("rap_res.R")
 
 # UI ----
 ui <- fluidPage(
+    useShinyjs(),
     ## HEADER ----
     fluidRow(
         box(width = 12, background = "maroon",
@@ -777,7 +929,11 @@ ui <- fluidPage(
                 ),
                 conditionalPanel(
                   'input.sidebarid == "joint_risk"',
-                  selectInput("joint_admin_filter", label = paste0(lang_label("rep_label_admin1_name"),":"), choices = joint_admin_choices, selected = joint_admin_default)
+                  selectInput("joint_admin_filter", label = paste0(lang_label("rep_label_admin1_name"),":"), choices = joint_admin_choices, selected = joint_admin_default),
+                  div(style = "display:flex; flex-direction:column; gap:6px; padding: 4px 8px 8px 8px;",
+                    downloadButton("download_joint_html", lang_label("joint_download_html"), icon = icon("file-lines"), class = "button_joint_dl"),
+                    downloadButton("download_joint_word", lang_label("joint_download_word"), icon = icon("file-lines"), class = "button_joint_dl")
+                  )
                 )
               )
             }
@@ -883,14 +1039,28 @@ ui <- fluidPage(
           if (joint_data_available) {
             tabItem(tabName = "joint_risk",
                     h2(lang_label("joint_overview_title")),
-                    br(),
+
+                    # --- Intro box ---
+                    fluidRow(
+                      box(width = 12,
+                          solidHeader = FALSE,
+                          collapsible = TRUE,
+                          collapsed = FALSE,
+                          title = lang_label("joint_intro_title"),
+                          style = "border-left: 4px solid #1c9ad6; background:#f9fcff;",
+                          div(style = "font-size: 14px; line-height: 1.6;", joint_intro_html)
+                      )
+                    ),
+
+                    # --- Value boxes ---
                     fluidRow(
                       valueBoxOutput("joint_box_low", width = 3),
                       valueBoxOutput("joint_box_medium", width = 3),
                       valueBoxOutput("joint_box_high", width = 3),
                       valueBoxOutput("joint_box_very_high", width = 3)
                     ),
-                    
+
+                    # --- Map + bar ---
                     fluidRow(
                       box(width = 7,
                           solidHeader = TRUE,
@@ -902,10 +1072,38 @@ ui <- fluidPage(
                           solidHeader = TRUE,
                           collapsible = TRUE,
                           title = textOutput("joint_bar_title"),
-                          shinycssloaders::withSpinner(plotlyOutput("joint_barplot", height = 600), color = "#1c9ad6", type = "8", size = 0.5)
+                          tabBox(width = 12, height = NULL,
+                            tabPanel(title = joint_summary_tab_label, icon = icon("table"),
+                              br(),
+                              uiOutput("joint_summary_text"),
+                              dataTableOutput("joint_summary_table")
+                            ),
+                            tabPanel(title = joint_chart_tab_label, icon = icon("bar-chart"),
+                              shinycssloaders::withSpinner(plotlyOutput("joint_barplot", height = 520), color = "#1c9ad6", type = "8", size = 0.5)
+                            )
+                          )
                       )
                     ),
-                    
+
+                    # --- Methodology: score scales + joint matrix ---
+                    fluidRow(
+                      box(width = 5,
+                          solidHeader = FALSE,
+                          collapsible = TRUE,
+                          title = joint_scale_title,
+                          style = "border-left: 4px solid #888;",
+                          joint_scale_table_html
+                      ),
+                      box(width = 7,
+                          solidHeader = FALSE,
+                          collapsible = TRUE,
+                          title = joint_matrix_title,
+                          style = "border-left: 4px solid #888;",
+                          joint_matrix_html
+                      )
+                    ),
+
+                    # --- Data table ---
                     fluidRow(
                       box(width = 12,
                           solidHeader = TRUE,
@@ -914,11 +1112,25 @@ ui <- fluidPage(
                           shinycssloaders::withSpinner(dataTableOutput("joint_data_table"), color = "#1c9ad6", type = "8", size = 0.5)
                       )
                     ),
+
                     if (joint_component_section_available) {
                       tagList(
                         br(),
                         hr(),
                         h3(lang_label("joint_component_section_title")),
+
+                        # --- Component section intro box ---
+                        fluidRow(
+                          box(width = 12,
+                              solidHeader = FALSE,
+                              collapsible = TRUE,
+                              collapsed = FALSE,
+                              title = lang_label("joint_component_intro_title"),
+                              style = "border-left: 4px solid #1c9ad6; background:#f9fcff;",
+                              div(style = "font-size: 14px; line-height: 1.6;", joint_component_intro_html)
+                          )
+                        ),
+
                         fluidRow(
                           column(width = 5,
                                  selectInput(
@@ -940,7 +1152,16 @@ ui <- fluidPage(
                               solidHeader = TRUE,
                               collapsible = TRUE,
                               title = textOutput("joint_detail_bar_title"),
-                              shinycssloaders::withSpinner(plotlyOutput("joint_detail_barplot", height = 600), color = "#1c9ad6", type = "8", size = 0.5)
+                              tabBox(width = 12, height = NULL,
+                                tabPanel(title = joint_summary_tab_label, icon = icon("table"),
+                                  br(),
+                                  uiOutput("joint_detail_summary_text"),
+                                  dataTableOutput("joint_detail_summary_table")
+                                ),
+                                tabPanel(title = joint_chart_tab_label, icon = icon("bar-chart"),
+                                  shinycssloaders::withSpinner(plotlyOutput("joint_detail_barplot", height = 520), color = "#1c9ad6", type = "8", size = 0.5)
+                                )
+                              )
                           )
                         ),
                         fluidRow(
@@ -1447,6 +1668,72 @@ server <- function(input, output, session) {
     }
   )
   
+  # DOWNLOAD Joint Reports ----
+  joint_report_params <- reactive({
+    list(
+      joint_base_data         = joint_base_data,
+      joint_immunity_data     = if (exists("joint_immunity_data")) joint_immunity_data else NULL,
+      joint_surveillance_data = if (exists("joint_surveillance_data")) joint_surveillance_data else NULL,
+      country_shapes          = country_shapes,
+      COUNTRY_NAME            = COUNTRY_NAME,
+      LANG                    = LANG,
+      LANG_TLS                = LANG_TLS,
+      YEAR_EVAL               = YEAR_EVAL
+    )
+  })
+
+  output$download_joint_html <- downloadHandler(
+    filename = function() paste0(lang_label("joint_report_title"), " ", toupper(COUNTRY_NAME), ".html"),
+    content = function(file) {
+      shinyjs::disable("download_joint_html")
+      shinyjs::disable("download_joint_word")
+      notif_id <- showNotification(
+        lang_label("joint_report_generating"),
+        duration = NULL, closeButton = FALSE, type = "message"
+      )
+      on.exit({
+        removeNotification(notif_id)
+        shinyjs::enable("download_joint_html")
+        shinyjs::enable("download_joint_word")
+      })
+      tmp <- tempfile(fileext = ".html")
+      rmarkdown::render(
+        input       = "joint_report_HTML.Rmd",
+        output_file = tmp,
+        params      = joint_report_params(),
+        envir       = new.env(parent = globalenv()),
+        quiet       = TRUE
+      )
+      file.copy(tmp, file)
+    }
+  )
+
+  output$download_joint_word <- downloadHandler(
+    filename = function() paste0(lang_label("joint_report_title"), " ", toupper(COUNTRY_NAME), ".docx"),
+    content = function(file) {
+      shinyjs::disable("download_joint_html")
+      shinyjs::disable("download_joint_word")
+      notif_id <- showNotification(
+        lang_label("joint_report_generating"),
+        duration = NULL, closeButton = FALSE, type = "message"
+      )
+      on.exit({
+        removeNotification(notif_id)
+        shinyjs::enable("download_joint_html")
+        shinyjs::enable("download_joint_word")
+      })
+      tmp <- tempfile(fileext = ".docx")
+      rmarkdown::render(
+        input       = "joint_report_WORD.Rmd",
+        output_file = tmp,
+        params      = joint_report_params(),
+        envir       = new.env(parent = globalenv()),
+        quiet       = TRUE
+      )
+      file.copy(tmp, file)
+    }
+  )
+
   # SERVER GENERAL IND ----
   ind_rename <- function(selected_ind) {
     return(
@@ -1708,6 +1995,15 @@ server <- function(input, output, session) {
       }
       toupper(label)
     })
+
+    # Returns "" when ALL selected — used in summary text to omit location phrase
+    joint_text_location <- reactive({
+      selected <- input$joint_admin_filter
+      if (is.null(selected) || selected == "ALL") return("")
+      label <- joint_admin_lookup$admin1_label[joint_admin_lookup$admin1_key == selected]
+      if (length(label) == 0 || is.na(label)) return(toupper(selected))
+      toupper(label)
+    })
     
     joint_map_data <- reactive({
       shapes <- country_shapes
@@ -1787,9 +2083,9 @@ server <- function(input, output, session) {
       req(nrow(map_data) > 0)
       pal <- colorFactor(palette = joint_palette, domain = joint_risk_levels, levels = joint_risk_levels, na.color = "#666666")
       no_data_label <- lang_label("no_data")
-      joint_labels <- ifelse(is.na(map_data$joint_risk_level), no_data_label, as.character(map_data$joint_risk_level))
-      measles_labels <- ifelse(is.na(map_data$measles_risk_level), no_data_label, as.character(map_data$measles_risk_level))
-      polio_labels <- ifelse(is.na(map_data$polio_risk_level), no_data_label, as.character(map_data$polio_risk_level))
+      joint_labels   <- translate_joint_level(map_data$joint_risk_level,   no_data_label)
+      measles_labels <- translate_joint_level(map_data$measles_risk_level, no_data_label)
+      polio_labels   <- translate_joint_level(map_data$polio_risk_level,   no_data_label)
       shape_label <- sprintf(
         "<strong>%s</strong>, %s<br/>%s: %s<br/>%s: %s<br/>%s: %s",
         map_data$ADMIN2,
@@ -1832,21 +2128,22 @@ server <- function(input, output, session) {
         addLegend(
           title = lang_label("joint_risk_level_title"),
           colors = joint_palette[rev(joint_risk_levels)],
-          labels = rev(joint_risk_levels),
+          labels = rev(unname(joint_level_display)),
           opacity = 0.7,
           position = 'topright'
         )
     })
-    
+
     output$joint_barplot <- renderPlotly({
-      counts_tbl <- joint_counts()
+      counts_tbl <- joint_counts() %>%
+        mutate(level_label = factor(joint_level_display[as.character(level)], levels = unname(joint_level_display)))
       plot_ly(
         counts_tbl,
-        x = ~level,
+        x = ~level_label,
         y = ~n,
         type = "bar",
-        color = ~level,
-        colors = joint_palette[joint_risk_levels],
+        color = ~level_label,
+        colors = joint_palette_display[levels(counts_tbl$level_label)],
         text = ~n,
         textposition = "outside"
       ) %>%
@@ -1859,6 +2156,16 @@ server <- function(input, output, session) {
         config(displaylogo = FALSE)
     })
     
+    output$joint_summary_text <- renderUI({
+      joint_make_summary_text(joint_counts(), joint_text_location())
+    })
+    outputOptions(output, "joint_summary_text",  suspendWhenHidden = FALSE)
+
+    output$joint_summary_table <- renderDataTable(server = FALSE, {
+      joint_make_summary_table(joint_counts())
+    })
+    outputOptions(output, "joint_summary_table", suspendWhenHidden = FALSE)
+
     output$joint_data_table <- renderDataTable(server = FALSE,{
       admin1_col <- lang_label("joint_table_admin1")
       admin2_col <- lang_label("joint_table_admin2")
@@ -1872,30 +2179,35 @@ server <- function(input, output, session) {
           !!admin1_col := admin1_label,
           !!admin2_col := admin2_label,
           !!measles_points_col := measles_risk_points,
-          !!measles_level_col := as.character(measles_risk_level),
+          !!measles_level_col := translate_joint_level(measles_risk_level, lang_label("no_data")),
           !!polio_score_col := polio_total_score,
-          !!polio_level_col := as.character(polio_risk_level),
-          !!joint_level_col_name := as.character(joint_risk_level)
+          !!polio_level_col := translate_joint_level(polio_risk_level, lang_label("no_data")),
+          !!joint_level_col_name := translate_joint_level(joint_risk_level, lang_label("no_data"))
         )
-      
+      disp_levels <- unname(joint_level_display)
       datatable(
         dat,
         rownames = FALSE,
         extensions = 'Buttons',
         options = list(
           dom = 'Bfrtip',
-          buttons = c('copy','csv','excel'),
-          pageLength = 10,
-          scrollX = TRUE
+          searching = TRUE, scrollX = TRUE, autoWidth = FALSE,
+          ordering = TRUE, pageLength = 13,
+          buttons = list(
+            list(extend = "copy", text = lang_label("button_copy")),
+            list(extend = "csv",  filename = "joint_risk"),
+            list(extend = "excel",filename = "joint_risk")
+          ),
+          language = list(
+            info = paste0(lang_label("data_table_showing"), " _START_ ", lang_label("data_table_to"), " _END_ ", lang_label("data_table_of"), " _TOTAL_ ", lang_label("data_table_rows")),
+            paginate = list(previous = lang_label("data_table_prev"), `next` = lang_label("data_table_next"))
+          )
         )
       ) %>%
         formatStyle(
           joint_level_col_name,
-          backgroundColor = styleEqual(
-            joint_risk_levels,
-            joint_palette[joint_risk_levels]
-          ),
-          color = "black"
+          backgroundColor = styleEqual(disp_levels, joint_palette[joint_risk_levels]),
+          color = styleEqual(disp_levels, c("black","black","white","white"))
         )
     })
     
@@ -1998,9 +2310,9 @@ server <- function(input, output, session) {
         req(nrow(map_data) > 0)
         pal <- colorFactor(palette = joint_palette, domain = joint_risk_levels, levels = joint_risk_levels, na.color = "#666666")
         no_data_label <- lang_label("no_data")
-        joint_labels <- ifelse(is.na(map_data[[joint_level_col]]), no_data_label, as.character(map_data[[joint_level_col]]))
-        measles_labels <- ifelse(is.na(map_data[[measles_level_col]]), no_data_label, as.character(map_data[[measles_level_col]]))
-        polio_labels <- ifelse(is.na(map_data[[polio_level_col]]), no_data_label, as.character(map_data[[polio_level_col]]))
+        joint_labels   <- translate_joint_level(map_data[[joint_level_col]],   no_data_label)
+        measles_labels <- translate_joint_level(map_data[[measles_level_col]], no_data_label)
+        polio_labels   <- translate_joint_level(map_data[[polio_level_col]],   no_data_label)
         component_label <- joint_component_display_label(key)
         shape_label <- sprintf(
           "<strong>%s</strong>, %s<br/>%s %s: %s<br/>%s: %s<br/>%s: %s",
@@ -2043,21 +2355,32 @@ server <- function(input, output, session) {
           addLegend(
             title = sprintf(lang_label("joint_component_joint_level"), component_label),
             colors = joint_palette[rev(joint_risk_levels)],
-            labels = rev(joint_risk_levels),
+            labels = rev(unname(joint_level_display)),
             opacity = 0.7,
             position = 'topright'
           )
       })
       
+      output$joint_detail_summary_text <- renderUI({
+        joint_make_summary_text(joint_component_counts(), joint_text_location())
+      })
+      outputOptions(output, "joint_detail_summary_text",  suspendWhenHidden = FALSE)
+
+      output$joint_detail_summary_table <- renderDataTable(server = FALSE, {
+        joint_make_summary_table(joint_component_counts())
+      })
+      outputOptions(output, "joint_detail_summary_table", suspendWhenHidden = FALSE)
+
       output$joint_detail_barplot <- renderPlotly({
-        counts_tbl <- joint_component_counts()
+        counts_tbl <- joint_component_counts() %>%
+          mutate(level_label = factor(joint_level_display[as.character(level)], levels = unname(joint_level_display)))
         plot_ly(
           counts_tbl,
-          x = ~level,
+          x = ~level_label,
           y = ~n,
           type = "bar",
-          color = ~level,
-          colors = joint_palette[joint_risk_levels],
+          color = ~level_label,
+          colors = joint_palette_display[levels(counts_tbl$level_label)],
           text = ~n,
           textposition = "outside"
         ) %>%
@@ -2091,29 +2414,35 @@ server <- function(input, output, session) {
             !!admin1_col := admin1_label,
             !!admin2_col := admin2_label,
             !!measles_score_label := .data[[measles_score_col]],
-            !!measles_level_label := as.character(.data[[measles_level_col]]),
+            !!measles_level_label := translate_joint_level(.data[[measles_level_col]], lang_label("no_data")),
             !!polio_score_label := .data[[polio_score_col]],
-            !!polio_level_label := as.character(.data[[polio_level_col]]),
-            !!joint_level_label := as.character(.data[[joint_level_col]])
+            !!polio_level_label := translate_joint_level(.data[[polio_level_col]], lang_label("no_data")),
+            !!joint_level_label := translate_joint_level(.data[[joint_level_col]], lang_label("no_data"))
           )
+        disp_levels <- unname(joint_level_display)
         datatable(
           dat,
           rownames = FALSE,
           extensions = 'Buttons',
           options = list(
             dom = 'Bfrtip',
-            buttons = c('copy','csv','excel'),
-            pageLength = 10,
-            scrollX = TRUE
+            searching = TRUE, scrollX = TRUE, autoWidth = FALSE,
+            ordering = TRUE, pageLength = 13,
+            buttons = list(
+              list(extend = "copy", text = lang_label("button_copy")),
+              list(extend = "csv",  filename = paste0("joint_", key)),
+              list(extend = "excel",filename = paste0("joint_", key))
+            ),
+            language = list(
+              info = paste0(lang_label("data_table_showing"), " _START_ ", lang_label("data_table_to"), " _END_ ", lang_label("data_table_of"), " _TOTAL_ ", lang_label("data_table_rows")),
+              paginate = list(previous = lang_label("data_table_prev"), `next` = lang_label("data_table_next"))
+            )
           )
         ) %>%
           formatStyle(
             joint_level_label,
-            backgroundColor = styleEqual(
-              joint_risk_levels,
-              joint_palette[joint_risk_levels]
-            ),
-            color = "black"
+            backgroundColor = styleEqual(disp_levels, joint_palette[joint_risk_levels]),
+            color = styleEqual(disp_levels, c("black","black","white","white"))
           )
       })
     }

@@ -232,3 +232,25 @@ hr {border-top: 1px solid #000000;}
     margin-right: 5px !important;
     float:center;
 }
+
+.button_joint_dl {
+    background-color: white;
+    color: black;
+    border-radius: 5px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    display: block !important;
+    text-align: center !important;
+}
+
+.button_joint_dl:hover {
+    background-color: #f0f0f0;
+    color: black;
+}
+
+#shiny-notification-panel {
+    bottom: 20px !important;
+    left: 20px !important;
+    right: auto !important;
+    top: auto !important;
+}

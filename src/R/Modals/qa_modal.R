@@ -66,5 +66,9 @@ server <- function(input, output, session) {
 }
 
 # RUN ----
-shinyApp(ui = ui, server = server, options = options(shiny.launch.browser = .rs.invokeShinyWindowViewer))
+if (exists(".rs.invokeShinyWindowViewer")) {
+  shinyApp(ui = ui, server = server, options = options(shiny.launch.browser = .rs.invokeShinyWindowViewer))
+} else {
+  shinyApp(ui = ui, server = server)
+}
 

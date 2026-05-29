@@ -20,10 +20,10 @@ library(pacman)
 # Install ----
 # Install required packages if not already installed
 p_load(devtools,webshot,lubridate,forcats,stringr,dplyr,purrr,readr,tibble,
-       tidyverse,tidyr,shinydashboard,shinyBS,shiny,shinycssloaders,sf,scales,
+       tidyverse,tidyr,shinydashboard,shinyBS,shiny,shinycssloaders,shinyjs,sf,scales,
        rmarkdown,readxl,RColorBrewer,plotly,ggplot2,mapview,leaflet,janitor,
        htmltools,fontawesome,DT,data.table,knitr,geojsonio,rmapshaper,sp,
-       tinytex,rsconnect,writexl, rio,
+       tinytex,rsconnect,writexl,rio,openxlsx,
        install = T)
 
 # Installation of phantomjs from Github
@@ -37,7 +37,7 @@ to_be_installed <- setdiff(
     "tidyverse","tidyr","shinydashboard","shinyBS","shiny","sf","scales","rmarkdown",
     "readxl","RColorBrewer","plotly","ggplot2","mapview","leaflet","janitor","htmltools",
     "fontawesome","DT","data.table","knitr","geojsonio","rmapshaper","sp","tinytex",
-    "shinycssloaders","rsconnect","writexl"), loaded_packages)
+    "shinycssloaders","shinyjs","rsconnect","writexl","rio","openxlsx"), loaded_packages)
 
 # LANG MSG ----
 LANG <- as.character(read_excel("Data/country_data.xlsx",sheet = 1)[8,2])

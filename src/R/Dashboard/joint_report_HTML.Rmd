@@ -1,0 +1,313 @@
+---
+title: "`r params$LANG_TLS$LANG[params$LANG_TLS$LABEL == 'joint_report_title']` - `r params$COUNTRY_NAME`"
+author: "PAHO/PAHO"
+date: "`r params$LANG_TLS$LANG[params$LANG_TLS$LABEL == 'joint_report_date']`: `r format(Sys.Date(), '%d.%m.%Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+params:
+  joint_base_data: NULL
+  joint_immunity_data: NULL
+  joint_surveillance_data: NULL
+  country_shapes: NULL
+  COUNTRY_NAME: ""
+  LANG: "SPA"
+  LANG_TLS: NULL
+  YEAR_EVAL: 2024
+---
+
+```{r setup, include=FALSE}
+Sys.setlocale(locale = "es_ES.UTF-8")
+options(knitr.duplicate.label = "allow", scipen = 999)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(leaflet)
+library(plotly)
+library(knitr)
+library(tidyverse)
+library(sf)
+library(janitor)
+library(htmltools)
+
+LANG_TLS        <- params$LANG_TLS
+COUNTRY_NAME    <- params$COUNTRY_NAME
+YEAR_EVAL       <- params$YEAR_EVAL
+joint_base_data <- params$joint_base_data
+joint_immunity_data     <- params$joint_immunity_data
+joint_surveillance_data <- params$joint_surveillance_data
+country_shapes  <- params$country_shapes
+
+lang_label <- function(label) LANG_TLS$LANG[LANG_TLS$LABEL == label]
+
+joint_risk_levels <- c("Low","Medium","High","Very high")
+joint_palette <- c(Low="#92d050",Medium="#fec000",High="#e8132b","Very high"="#920000")
+joint_level_display <- c(
+  "Low"       = lang_label("LR"),
+  "Medium"    = lang_label("MR"),
+  "High"      = lang_label("HR"),
+  "Very high" = lang_label("VHR")
+)
+joint_palette_display <- setNames(unname(joint_palette), unname(joint_level_display))
+
+translate_level <- function(x) {
+  v <- joint_level_display[as.character(x)]
+  ifelse(is.na(x) | is.na(v), lang_label("no_data"), unname(v))
+}
+
+fig_label   <- lang_label("joint_figure_label")
+tbl_label   <- lang_label("joint_table_label")
+no_data_lbl <- lang_label("no_data")
+admin2_name <- lang_label("rep_label_admin2_name_plural")
+
+# Ensure keys on shapes
+if (!("ADMIN1_KEY" %in% names(country_shapes))) {
+  country_shapes <- country_shapes %>%
+    mutate(
+      ADMIN1_KEY = toupper(iconv(ADMIN1, to = "ASCII//TRANSLIT")),
+      ADMIN2_KEY = toupper(iconv(ADMIN2, to = "ASCII//TRANSLIT"))
+    )
+}
+
+# ---- helpers ----
+make_counts <- function(data, level_col) {
+  counts <- data %>%
+    mutate(level = as.character(.data[[level_col]])) %>%
+    count(level, name = "n")
+  tibble(level = joint_risk_levels) %>%
+    left_join(counts, by = "level") %>%
+    mutate(n = replace_na(n, 0L), level = factor(level, levels = joint_risk_levels))
+}
+
+make_joint_map <- function(data, level_col) {
+  shapes <- country_shapes %>%
+    left_join(data, by = c("ADMIN1_KEY" = "admin1_key", "ADMIN2_KEY" = "admin2_key"))
+  pal <- colorFactor(palette = joint_palette, domain = joint_risk_levels,
+                     levels = joint_risk_levels, na.color = "#666666")
+  shape_label <- sprintf(
+    "<strong>%s</strong>, %s<br/>%s: %s",
+    shapes$ADMIN2, shapes$ADMIN1,
+    lang_label("joint_risk_level_title"),
+    translate_level(shapes[[level_col]])
+  ) %>% lapply(HTML)
+  leaflet(options = leafletOptions(attributionControl = FALSE)) %>%
+    addProviderTiles(providers$Esri.WorldGrayCanvas) %>%
+    addPolygons(
+      data = shapes %>% st_as_sf(),
+      fillColor   = ~pal(get(level_col)),
+      fillOpacity = 0.75, weight = 1, color = "#333",
+      label = shape_label,
+      labelOptions = labelOptions(style = list(padding = "3px 8px"), textsize = "14px")
+    ) %>%
+    addLegend(
+      title   = lang_label("joint_risk_level_title"),
+      colors  = joint_palette[rev(joint_risk_levels)],
+      labels  = rev(unname(joint_level_display)),
+      opacity = 0.75, position = "topright"
+    )
+}
+
+make_bar <- function(counts_tbl) {
+  ct <- counts_tbl %>%
+    mutate(level_label = factor(joint_level_display[as.character(level)],
+                                levels = unname(joint_level_display)))
+  plot_ly(ct, x = ~level_label, y = ~n, type = "bar",
+          color = ~level_label,
+          colors = joint_palette_display[levels(ct$level_label)],
+          text = ~n, textposition = "outside") %>%
+    layout(
+      xaxis = list(title = ""),
+      yaxis = list(title = lang_label("joint_num_municipalities")),
+      showlegend = FALSE
+    ) %>%
+    config(displaylogo = FALSE)
+}
+
+make_summary_text <- function(counts_tbl, section_label) {
+  total <- sum(counts_tbl$n)
+  get_n <- function(l) { v <- counts_tbl$n[as.character(counts_tbl$level) == l]; if (!length(v)) 0L else v }
+  pct   <- function(n) paste0(sprintf("%.1f", n / total * 100), "%")
+  n_lr  <- get_n("Low"); n_mr <- get_n("Medium")
+  n_hr  <- get_n("High"); n_vhr <- get_n("Very high")
+  sprintf(lang_label("joint_summary_text"),
+    total, "", n_vhr, pct(n_vhr), n_hr, pct(n_hr), n_mr, pct(n_mr), n_lr, pct(n_lr))
+}
+
+make_summary_kable <- function(counts_tbl) {
+  row_labels <- c(lang_label("joint_level_lr"), lang_label("joint_level_mr"),
+                  lang_label("joint_level_hr"), lang_label("joint_level_vhr"),
+                  lang_label("joint_total_label"))
+  total <- sum(counts_tbl$n)
+  get_n <- function(l) { v <- counts_tbl$n[as.character(counts_tbl$level) == l]; if (!length(v)) 0L else v }
+  ns  <- c(get_n("Low"), get_n("Medium"), get_n("High"), get_n("Very high"))
+  pct <- if (total > 0) paste0(sprintf("%.1f", ns / total * 100), "%") else rep("0.0%", 4)
+  df <- data.frame(
+    cat = row_labels,
+    n   = c(ns, total),
+    pct = c(pct, "100.0%"),
+    stringsAsFactors = FALSE
+  )
+  colnames(df) <- c(lang_label("joint_summary_col_cat"),
+                    lang_label("joint_summary_col_n"),
+                    lang_label("joint_summary_col_pct"))
+  knitr::kable(df, align = "lrr", booktabs = TRUE)
+}
+```
+
+# `r lang_label("joint_intro_title")`
+
+`r lang_label("joint_intro_body")`
+
+---
+
+## `r lang_label("joint_scale_title")`
+
+`r lang_label("joint_scale_note")`
+
+| `r lang_label("joint_cat_label")` | `r lang_label("joint_mr_label")` | Polio |
+|---|---|---|
+| `r lang_label("LR")` | < 25 | < 35 |
+| `r lang_label("MR")` | 25–50 | 35–48 |
+| `r lang_label("HR")` | 50–74 | 49–60 |
+| `r lang_label("VHR")` | 74–100 | 60–112 |
+
+## `r lang_label("joint_matrix_title")`
+
+`r lang_label("joint_matrix_note")`
+
+| `r lang_label("joint_mr_label")` ↓ / Polio → | `r lang_label("LR")` | `r lang_label("MR")` | `r lang_label("HR")` | `r lang_label("VHR")` |
+|---|---|---|---|---|
+| **`r lang_label("LR")`** | `r lang_label("LR")` | `r lang_label("MR")` | `r lang_label("MR")` | `r lang_label("HR")` |
+| **`r lang_label("MR")`** | `r lang_label("MR")` | `r lang_label("MR")` | `r lang_label("HR")` | `r lang_label("HR")` |
+| **`r lang_label("HR")`** | `r lang_label("MR")` | `r lang_label("HR")` | `r lang_label("HR")` | `r lang_label("VHR")` |
+| **`r lang_label("VHR")`** | `r lang_label("HR")` | `r lang_label("HR")` | `r lang_label("VHR")` | `r lang_label("VHR")` |
+
+\newpage
+
+# `r lang_label("joint_section_general")`
+
+```{r sec1_counts, include=FALSE}
+sec1_counts <- make_counts(joint_base_data, "joint_risk_level")
+```
+
+`r make_summary_text(sec1_counts)`
+
+### `r tbl_label` 1a: `r lang_label("joint_table_title")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r table_1a}
+make_summary_kable(sec1_counts)
+```
+
+### `r fig_label` 1a: `r lang_label("joint_map_title")` — `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_1a, out.width="100%"}
+make_joint_map(joint_base_data, "joint_risk_level")
+```
+
+### `r fig_label` 1b: `r lang_label("joint_distribution_title")` — `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_1b, out.width="100%"}
+make_bar(sec1_counts)
+```
+
+### `r tbl_label` 1b: `r lang_label("joint_table_data_title")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r table_1b}
+dat <- joint_base_data %>%
+  transmute(
+    !!lang_label("joint_table_admin1") := admin1_label,
+    !!lang_label("joint_table_admin2") := admin2_label,
+    !!lang_label("joint_mr_pts_label") := measles_risk_points,
+    !!lang_label("joint_table_measles_level") := translate_level(measles_risk_level),
+    !!lang_label("joint_polio_pts_label") := polio_total_score,
+    !!lang_label("joint_table_polio_level") := translate_level(polio_risk_level),
+    !!lang_label("joint_risk_level_title") := translate_level(joint_risk_level)
+  )
+knitr::kable(dat, align = "llrrlrl", booktabs = TRUE)
+```
+
+\newpage
+
+# `r lang_label("menuitem_inm_pob")`
+
+```{r sec2_setup, include=FALSE}
+sec2_available <- !is.null(joint_immunity_data) && nrow(joint_immunity_data) > 0
+```
+
+`r if (!sec2_available) "*No data available.*"`
+
+```{r sec2_counts, include=FALSE, eval=sec2_available}
+sec2_counts_measles <- make_counts(joint_immunity_data, "measles_immunity_risk_level")
+sec2_counts_polio   <- make_counts(joint_immunity_data, "polio_immunity_risk_level")
+sec2_counts_joint   <- make_counts(joint_immunity_data, "joint_immunity_risk_level")
+```
+
+```{r sec2_text, results="asis", eval=sec2_available}
+cat(make_summary_text(sec2_counts_joint))
+```
+
+### `r tbl_label` 2a: `r lang_label("joint_component_section_title")` — `r lang_label("menuitem_inm_pob")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r table_2a, eval=sec2_available}
+make_summary_kable(sec2_counts_joint)
+```
+
+### `r fig_label` 2a: `r lang_label("menuitem_inm_pob")` — `r lang_label("joint_label_joint")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_2a, out.width="100%", eval=sec2_available}
+make_joint_map(joint_immunity_data, "joint_immunity_risk_level")
+```
+
+### `r fig_label` 2b: `r lang_label("menuitem_inm_pob")` — `r lang_label("joint_label_measles")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_2b, out.width="100%", eval=sec2_available}
+make_joint_map(joint_immunity_data, "measles_immunity_risk_level")
+```
+
+### `r fig_label` 2c: `r lang_label("menuitem_inm_pob")` — `r lang_label("joint_label_polio")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_2c, out.width="100%", eval=sec2_available}
+make_joint_map(joint_immunity_data, "polio_immunity_risk_level")
+```
+
+### `r fig_label` 2d: `r lang_label("joint_distribution_title")` — `r lang_label("menuitem_inm_pob")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_2d, out.width="100%", eval=sec2_available}
+make_bar(sec2_counts_joint)
+```
+
+\newpage
+
+# `r lang_label("menuitem_surv_qual")`
+
+```{r sec3_setup, include=FALSE}
+sec3_available <- !is.null(joint_surveillance_data) && nrow(joint_surveillance_data) > 0
+```
+
+`r if (!sec3_available) "*No data available.*"`
+
+```{r sec3_counts, include=FALSE, eval=sec3_available}
+sec3_counts_joint   <- make_counts(joint_surveillance_data, "joint_surveillance_risk_level")
+sec3_counts_measles <- make_counts(joint_surveillance_data, "measles_surveillance_risk_level")
+sec3_counts_polio   <- make_counts(joint_surveillance_data, "polio_surveillance_risk_level")
+```
+
+```{r sec3_text, results="asis", eval=sec3_available}
+cat(make_summary_text(sec3_counts_joint))
+```
+
+### `r tbl_label` 3a: `r lang_label("joint_component_section_title")` — `r lang_label("menuitem_surv_qual")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r table_3a, eval=sec3_available}
+make_summary_kable(sec3_counts_joint)
+```
+
+### `r fig_label` 3a: `r lang_label("menuitem_surv_qual")` — `r lang_label("joint_label_joint")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_3a, out.width="100%", eval=sec3_available}
+make_joint_map(joint_surveillance_data, "joint_surveillance_risk_level")
+```
+
+### `r fig_label` 3b: `r lang_label("menuitem_surv_qual")` — `r lang_label("joint_label_measles")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_3b, out.width="100%", eval=sec3_available}
+make_joint_map(joint_surveillance_data, "measles_surveillance_risk_level")
+```
+
+### `r fig_label` 3c: `r lang_label("menuitem_surv_qual")` — `r lang_label("joint_label_polio")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_3c, out.width="100%", eval=sec3_available}
+make_joint_map(joint_surveillance_data, "polio_surveillance_risk_level")
+```
+
+### `r fig_label` 3d: `r lang_label("joint_distribution_title")` — `r lang_label("menuitem_surv_qual")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+```{r figure_3d, out.width="100%", eval=sec3_available}
+make_bar(sec3_counts_joint)
+```
