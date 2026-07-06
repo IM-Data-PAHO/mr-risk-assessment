@@ -17,6 +17,7 @@ library(shinyjs)
 library(fontawesome)
 library(plotly)
 library(leaflet)
+library(leaflet.extras)
 library(readxl)
 library(data.table)
 library(tidyr)
@@ -557,11 +558,14 @@ lang_label <- function(label) {
 # JOINT PEDAGOGY TEXT ----
 # All text variables that require lang_label — defined here after lang_label is available
 
-joint_intro_html <- HTML(paste0("<p style='margin-bottom:8px;'>", lang_label("joint_intro_body"), "</p>"))
 joint_component_intro_html <- HTML(paste0("<p>", lang_label("joint_component_intro_body"), "</p>"))
 
-joint_scale_title <- lang_label("joint_scale_title")
-joint_scale_note  <- lang_label("joint_scale_note")
+joint_about_scale_note_html <- HTML(sprintf(
+  lang_label("joint_about_scale_note"),
+  sprintf("<a href='%s' target='_blank' rel='noopener noreferrer'>%s</a>", "https://www.paho.org/sites/default/files/ops-scoring-matrix-criteria-es_0.pdf", lang_label("joint_about_link_word")),
+  sprintf("<a href='%s' target='_blank' rel='noopener noreferrer'>%s</a>", "https://www.paho.org/es/temas/poliomielitis", lang_label("joint_about_link_word"))
+))
+
 joint_mr_label    <- lang_label("joint_mr_label")
 joint_cat_label   <- lang_label("joint_cat_label")
 joint_pts_label   <- lang_label("joint_pts_label")
@@ -572,7 +576,6 @@ jt_hr  <- lang_label("HR")
 jt_vhr <- lang_label("VHR")
 
 joint_scale_table_html <- HTML(paste0(
-  "<p style='font-size:12px;color:#555;margin-bottom:8px;'>", joint_scale_note, "</p>",
   "<div style='display:flex;gap:24px;flex-wrap:wrap;'>",
   "<div>",
   "<p style='font-weight:bold;margin-bottom:4px;text-align:center;'>", joint_mr_label, "</p>",
@@ -601,12 +604,9 @@ joint_scale_table_html <- HTML(paste0(
   "</div>"
 ))
 
-joint_matrix_title    <- lang_label("joint_matrix_title")
-joint_matrix_note     <- lang_label("joint_matrix_note")
 joint_mr_col_label    <- paste0(joint_mr_label, " ↓")
 
 joint_matrix_html <- HTML(paste0(
-  "<p style='font-size:12px;color:#555;margin-bottom:10px;'>", joint_matrix_note, "</p>",
   "<div style='overflow-x:auto;'>",
   "<table style='border-collapse:collapse;font-size:12px;text-align:center;'>",
   "<thead><tr>",
@@ -1040,140 +1040,218 @@ ui <- fluidPage(
             tabItem(tabName = "joint_risk",
                     h2(lang_label("joint_overview_title")),
 
-                    # --- Intro box ---
-                    fluidRow(
-                      box(width = 12,
-                          solidHeader = FALSE,
-                          collapsible = TRUE,
-                          collapsed = FALSE,
-                          title = lang_label("joint_intro_title"),
-                          style = "border-left: 4px solid #1c9ad6; background:#f9fcff;",
-                          div(style = "font-size: 14px; line-height: 1.6;", joint_intro_html)
-                      )
-                    ),
+                    tabsetPanel(id = "joint_top_tabs", type = "tabs",
 
-                    # --- Value boxes ---
-                    fluidRow(
-                      valueBoxOutput("joint_box_low", width = 3),
-                      valueBoxOutput("joint_box_medium", width = 3),
-                      valueBoxOutput("joint_box_high", width = 3),
-                      valueBoxOutput("joint_box_very_high", width = 3)
-                    ),
+                      # --- Tab 1: General risk ---
+                      tabPanel(title = lang_label("joint_section_general"), value = "general",
+                        br(),
 
-                    # --- Map + bar ---
-                    fluidRow(
-                      box(width = 7,
-                          solidHeader = TRUE,
-                          collapsible = TRUE,
-                          title = textOutput("joint_map_title"),
-                          shinycssloaders::withSpinner(leafletOutput("joint_map", height = 600), color = "#1c9ad6", type = "8", size = 0.5)
+                        # --- Value boxes ---
+                        fluidRow(
+                          valueBoxOutput("joint_box_low", width = 3),
+                          valueBoxOutput("joint_box_medium", width = 3),
+                          valueBoxOutput("joint_box_high", width = 3),
+                          valueBoxOutput("joint_box_very_high", width = 3)
+                        ),
+
+                        # --- Map + bar ---
+                        fluidRow(
+                          box(width = 7,
+                              solidHeader = TRUE,
+                              collapsible = TRUE,
+                              title = textOutput("joint_map_title"),
+                              shinycssloaders::withSpinner(leafletOutput("joint_map", height = 600), color = "#1c9ad6", type = "8", size = 0.5)
+                          ),
+                          box(width = 5,
+                              solidHeader = TRUE,
+                              collapsible = TRUE,
+                              title = textOutput("joint_bar_title"),
+                              tabBox(width = 12, height = NULL,
+                                tabPanel(title = joint_summary_tab_label, icon = icon("table"),
+                                  br(),
+                                  uiOutput("joint_summary_text"),
+                                  dataTableOutput("joint_summary_table")
+                                ),
+                                tabPanel(title = joint_chart_tab_label, icon = icon("bar-chart"),
+                                  shinycssloaders::withSpinner(plotlyOutput("joint_barplot", height = 520), color = "#1c9ad6", type = "8", size = 0.5)
+                                )
+                              )
+                          )
+                        ),
+
+                        # --- Component synthesis table ---
+                        fluidRow(
+                          box(width = 12,
+                              solidHeader = TRUE,
+                              collapsible = TRUE,
+                              title = textOutput("joint_synthesis_title"),
+                              shinycssloaders::withSpinner(dataTableOutput("joint_synthesis_table"), color = "#1c9ad6", type = "8", size = 0.5)
+                          )
+                        ),
+
+                        # --- Data table ---
+                        fluidRow(
+                          box(width = 12,
+                              solidHeader = TRUE,
+                              collapsible = TRUE,
+                              title = lang_label("joint_table_title"),
+                              shinycssloaders::withSpinner(dataTableOutput("joint_data_table"), color = "#1c9ad6", type = "8", size = 0.5)
+                          )
+                        )
                       ),
-                      box(width = 5,
-                          solidHeader = TRUE,
-                          collapsible = TRUE,
-                          title = textOutput("joint_bar_title"),
-                          tabBox(width = 12, height = NULL,
-                            tabPanel(title = joint_summary_tab_label, icon = icon("table"),
-                              br(),
-                              uiOutput("joint_summary_text"),
-                              dataTableOutput("joint_summary_table")
+
+                      # --- Tab 2: Population immunity component ---
+                      if ("immunity" %in% names(joint_component_data_lookup)) {
+                        tabPanel(title = joint_component_label_lookup[["immunity"]], value = "immunity",
+                          br(),
+                          fluidRow(
+                            box(width = 12,
+                                solidHeader = FALSE,
+                                collapsible = TRUE,
+                                collapsed = FALSE,
+                                title = lang_label("joint_component_intro_title"),
+                                style = "border-left: 4px solid #1c9ad6; background:#f9fcff;",
+                                div(style = "font-size: 14px; line-height: 1.6;", joint_component_intro_html)
+                            )
+                          ),
+                          fluidRow(
+                            box(width = 7,
+                                solidHeader = TRUE,
+                                collapsible = TRUE,
+                                title = textOutput("joint_immunity_map_title"),
+                                shinycssloaders::withSpinner(leafletOutput("joint_immunity_map", height = 600), color = "#1c9ad6", type = "8", size = 0.5)
                             ),
-                            tabPanel(title = joint_chart_tab_label, icon = icon("bar-chart"),
-                              shinycssloaders::withSpinner(plotlyOutput("joint_barplot", height = 520), color = "#1c9ad6", type = "8", size = 0.5)
+                            box(width = 5,
+                                solidHeader = TRUE,
+                                collapsible = TRUE,
+                                title = textOutput("joint_immunity_bar_title"),
+                                tabBox(width = 12, height = NULL,
+                                  tabPanel(title = joint_summary_tab_label, icon = icon("table"),
+                                    br(),
+                                    uiOutput("joint_immunity_summary_text"),
+                                    dataTableOutput("joint_immunity_summary_table")
+                                  ),
+                                  tabPanel(title = joint_chart_tab_label, icon = icon("bar-chart"),
+                                    shinycssloaders::withSpinner(plotlyOutput("joint_immunity_barplot", height = 520), color = "#1c9ad6", type = "8", size = 0.5)
+                                  )
+                                )
+                            )
+                          ),
+                          fluidRow(
+                            box(width = 12,
+                                solidHeader = TRUE,
+                                collapsible = TRUE,
+                                title = textOutput("joint_immunity_table_title"),
+                                shinycssloaders::withSpinner(dataTableOutput("joint_immunity_table"), color = "#1c9ad6", type = "8", size = 0.5)
                             )
                           )
-                      )
-                    ),
+                        )
+                      },
 
-                    # --- Methodology: score scales + joint matrix ---
-                    fluidRow(
-                      box(width = 5,
-                          solidHeader = FALSE,
-                          collapsible = TRUE,
-                          title = joint_scale_title,
-                          style = "border-left: 4px solid #888;",
-                          joint_scale_table_html
-                      ),
-                      box(width = 7,
-                          solidHeader = FALSE,
-                          collapsible = TRUE,
-                          title = joint_matrix_title,
-                          style = "border-left: 4px solid #888;",
-                          joint_matrix_html
-                      )
-                    ),
+                      # --- Tab 3: Quality of surveillance component ---
+                      if ("surveillance" %in% names(joint_component_data_lookup)) {
+                        tabPanel(title = joint_component_label_lookup[["surveillance"]], value = "surveillance",
+                          br(),
+                          fluidRow(
+                            box(width = 12,
+                                solidHeader = FALSE,
+                                collapsible = TRUE,
+                                collapsed = FALSE,
+                                title = lang_label("joint_component_intro_title"),
+                                style = "border-left: 4px solid #1c9ad6; background:#f9fcff;",
+                                div(style = "font-size: 14px; line-height: 1.6;", joint_component_intro_html)
+                            )
+                          ),
+                          fluidRow(
+                            box(width = 7,
+                                solidHeader = TRUE,
+                                collapsible = TRUE,
+                                title = textOutput("joint_surveillance_map_title"),
+                                shinycssloaders::withSpinner(leafletOutput("joint_surveillance_map", height = 600), color = "#1c9ad6", type = "8", size = 0.5)
+                            ),
+                            box(width = 5,
+                                solidHeader = TRUE,
+                                collapsible = TRUE,
+                                title = textOutput("joint_surveillance_bar_title"),
+                                tabBox(width = 12, height = NULL,
+                                  tabPanel(title = joint_summary_tab_label, icon = icon("table"),
+                                    br(),
+                                    uiOutput("joint_surveillance_summary_text"),
+                                    dataTableOutput("joint_surveillance_summary_table")
+                                  ),
+                                  tabPanel(title = joint_chart_tab_label, icon = icon("bar-chart"),
+                                    shinycssloaders::withSpinner(plotlyOutput("joint_surveillance_barplot", height = 520), color = "#1c9ad6", type = "8", size = 0.5)
+                                  )
+                                )
+                            )
+                          ),
+                          fluidRow(
+                            box(width = 12,
+                                solidHeader = TRUE,
+                                collapsible = TRUE,
+                                title = textOutput("joint_surveillance_table_title"),
+                                shinycssloaders::withSpinner(dataTableOutput("joint_surveillance_table"), color = "#1c9ad6", type = "8", size = 0.5)
+                            )
+                          )
+                        )
+                      },
 
-                    # --- Data table ---
-                    fluidRow(
-                      box(width = 12,
-                          solidHeader = TRUE,
-                          collapsible = TRUE,
-                          title = lang_label("joint_table_title"),
-                          shinycssloaders::withSpinner(dataTableOutput("joint_data_table"), color = "#1c9ad6", type = "8", size = 0.5)
-                      )
-                    ),
-
-                    if (joint_component_section_available) {
-                      tagList(
+                      # --- Tab 4: About ---
+                      tabPanel(title = lang_label("joint_about_title"), value = "about",
                         br(),
-                        hr(),
-                        h3(lang_label("joint_component_section_title")),
 
-                        # --- Component section intro box ---
                         fluidRow(
                           box(width = 12,
                               solidHeader = FALSE,
                               collapsible = TRUE,
                               collapsed = FALSE,
-                              title = lang_label("joint_component_intro_title"),
+                              title = lang_label("joint_about_what_title"),
                               style = "border-left: 4px solid #1c9ad6; background:#f9fcff;",
-                              div(style = "font-size: 14px; line-height: 1.6;", joint_component_intro_html)
+                              div(style = "font-size: 14px; line-height: 1.6;", lang_label("joint_about_what_body"))
                           )
                         ),
 
                         fluidRow(
-                          column(width = 5,
-                                 selectInput(
-                                   "joint_detail_metric",
-                                   paste0(lang_label("joint_component_select"),":"),
-                                   choices = joint_component_choices,
-                                   selected = joint_component_default
-                                 )
+                          box(width = 12,
+                              solidHeader = FALSE,
+                              collapsible = TRUE,
+                              collapsed = FALSE,
+                              title = lang_label("joint_about_scale_title"),
+                              style = "border-left: 4px solid #888;",
+                              div(style = "font-size: 14px; line-height: 1.6;", lang_label("joint_about_scale_intro")),
+                              tags$p(style = "font-weight:bold;margin-top:12px;", lang_label("joint_about_scale_table_title")),
+                              joint_scale_table_html,
+                              div(style = "font-size: 14px; line-height: 1.6; margin-top:12px;", joint_about_scale_note_html)
                           )
                         ),
-                        fluidRow(
-                          box(width = 7,
-                              solidHeader = TRUE,
-                              collapsible = TRUE,
-                              title = textOutput("joint_detail_map_title"),
-                              shinycssloaders::withSpinner(leafletOutput("joint_detail_map", height = 600), color = "#1c9ad6", type = "8", size = 0.5)
-                          ),
-                          box(width = 5,
-                              solidHeader = TRUE,
-                              collapsible = TRUE,
-                              title = textOutput("joint_detail_bar_title"),
-                              tabBox(width = 12, height = NULL,
-                                tabPanel(title = joint_summary_tab_label, icon = icon("table"),
-                                  br(),
-                                  uiOutput("joint_detail_summary_text"),
-                                  dataTableOutput("joint_detail_summary_table")
-                                ),
-                                tabPanel(title = joint_chart_tab_label, icon = icon("bar-chart"),
-                                  shinycssloaders::withSpinner(plotlyOutput("joint_detail_barplot", height = 520), color = "#1c9ad6", type = "8", size = 0.5)
-                                )
-                              )
-                          )
-                        ),
+
                         fluidRow(
                           box(width = 12,
-                              solidHeader = TRUE,
+                              solidHeader = FALSE,
                               collapsible = TRUE,
-                              title = textOutput("joint_detail_table_title"),
-                              shinycssloaders::withSpinner(dataTableOutput("joint_detail_table"), color = "#1c9ad6", type = "8", size = 0.5)
+                              collapsed = FALSE,
+                              title = lang_label("joint_about_matrix_title"),
+                              style = "border-left: 4px solid #888;",
+                              div(style = "font-size: 14px; line-height: 1.6;", lang_label("joint_about_matrix_intro")),
+                              tags$p(style = "font-weight:bold;margin-top:12px;", lang_label("joint_about_matrix_table_title")),
+                              joint_matrix_html,
+                              div(style = "font-size: 14px; line-height: 1.6; margin-top:12px;", lang_label("joint_about_matrix_note")),
+                              div(style = "font-size: 14px; line-height: 1.6; margin-top:8px;", lang_label("joint_about_order_note"))
+                          )
+                        ),
+
+                        fluidRow(
+                          box(width = 12,
+                              solidHeader = FALSE,
+                              collapsible = TRUE,
+                              collapsed = FALSE,
+                              title = lang_label("joint_about_results_title"),
+                              style = "border-left: 4px solid #888;",
+                              div(style = "font-size: 14px; line-height: 1.6;", lang_label("joint_about_results_body"))
                           )
                         )
                       )
-                    }
+                    )
             )
           },
           
@@ -1964,6 +2042,79 @@ server <- function(input, output, session) {
         )
     })
     
+    joint_synthesis_rows <- reactive({
+      rows <- list()
+
+      rows[["general"]] <- list(
+        label  = lang_label("joint_synthesis_row_general"),
+        counts = joint_counts()
+      )
+
+      for (key in c("immunity", "surveillance")) {
+        if (key %in% names(joint_component_data_lookup)) {
+          dat <- joint_component_data_lookup[[key]]
+          selected_admin <- input$joint_admin_filter
+          if (!is.null(selected_admin) && selected_admin != "ALL") {
+            dat <- dat %>% filter(admin1_key == selected_admin)
+          }
+          dat <- dat %>% distinct(admin1_key, admin2_key, .keep_all = TRUE)
+          joint_level_col <- paste0("joint_", key, "_risk_level")
+          counts <- dat %>%
+            mutate(level = as.character(.data[[joint_level_col]])) %>%
+            count(level, name = "n")
+          counts_tbl <- tibble(level = joint_risk_levels) %>%
+            left_join(counts, by = "level") %>%
+            mutate(
+              n = replace_na(n, 0L),
+              level = factor(level, levels = joint_risk_levels)
+            )
+          rows[[key]] <- list(
+            label  = joint_component_label_lookup[[key]],
+            counts = counts_tbl
+          )
+        }
+      }
+      rows
+    })
+
+    output$joint_synthesis_title <- renderText({
+      sprintf(lang_label("joint_synthesis_title"), toupper(COUNTRY_NAME), YEAR_EVAL)
+    })
+
+    output$joint_synthesis_table <- renderDataTable(server = FALSE, {
+      rows <- joint_synthesis_rows()
+
+      fmt_cell <- function(counts_tbl, level) {
+        n <- counts_tbl$n[as.character(counts_tbl$level) == level]
+        if (length(n) == 0) n <- 0
+        total <- sum(counts_tbl$n)
+        pct <- if (total > 0) round(100 * n / total, 1) else 0
+        sprintf("%d (%s%%)", n, formatC(pct, format = "f", digits = 1))
+      }
+
+      component_col <- lang_label("joint_synthesis_col_component")
+      low_col       <- lang_label("joint_synthesis_col_low")
+      medium_col    <- lang_label("joint_synthesis_col_medium")
+      high_col      <- lang_label("joint_synthesis_col_high")
+      vhigh_col     <- lang_label("joint_synthesis_col_very_high")
+
+      dat <- bind_rows(lapply(rows, function(r) {
+        tibble(
+          !!component_col := r$label,
+          !!low_col       := fmt_cell(r$counts, "Low"),
+          !!medium_col    := fmt_cell(r$counts, "Medium"),
+          !!high_col      := fmt_cell(r$counts, "High"),
+          !!vhigh_col     := fmt_cell(r$counts, "Very high")
+        )
+      }))
+
+      datatable(
+        dat,
+        rownames = FALSE,
+        options = list(dom = 't', paging = FALSE, searching = FALSE, ordering = FALSE)
+      )
+    })
+
     joint_value_summary <- reactive({
       counts_tbl <- joint_counts()
       counts_named <- setNames(counts_tbl$n, as.character(counts_tbl$level))
@@ -2131,7 +2282,8 @@ server <- function(input, output, session) {
           labels = rev(unname(joint_level_display)),
           opacity = 0.7,
           position = 'topright'
-        )
+        ) %>%
+        addResetMapButton()
     })
 
     output$joint_barplot <- renderPlotly({
@@ -2148,7 +2300,7 @@ server <- function(input, output, session) {
         textposition = "outside"
       ) %>%
         layout(
-          xaxis = list(title = "", tickfont = list(size = 12)),
+          xaxis = list(title = lang_label("joint_barplot_xaxis_title"), tickfont = list(size = 12)),
           yaxis = list(title = lang_label("joint_num_municipalities"), tickfont = list(size = 12)),
           showlegend = FALSE,
           margin = list(l = 40, r = 20, t = 30, b = 60)
@@ -2220,26 +2372,21 @@ server <- function(input, output, session) {
         label
       }
       
+      make_joint_component_server <- function(key, output_prefix) {
+
       joint_component_filtered_data <- reactive({
-        req(length(joint_component_data_lookup) > 0)
-        available_keys <- names(joint_component_data_lookup)
-        req(length(available_keys) > 0)
-        selected_key <- input$joint_detail_metric
-        if (is.null(selected_key) || !(selected_key %in% available_keys)) {
-          selected_key <- available_keys[1]
-        }
-        dat <- joint_component_data_lookup[[selected_key]]
+        dat <- joint_component_data_lookup[[key]]
         req(!is.null(dat))
         selected_admin <- input$joint_admin_filter
         if (!is.null(selected_admin) && selected_admin != "ALL") {
           dat <- dat %>% filter(admin1_key == selected_admin)
         }
         list(
-          key = selected_key,
+          key = key,
           data = dat %>% distinct(admin1_key, admin2_key, .keep_all = TRUE)
         )
       })
-      
+
       joint_component_counts <- reactive({
         info <- joint_component_filtered_data()
         joint_level_col <- paste0("joint_", info$key, "_risk_level")
@@ -2253,7 +2400,7 @@ server <- function(input, output, session) {
             level = factor(level, levels = joint_risk_levels)
           )
       })
-      
+
       joint_component_map_data <- reactive({
         info <- joint_component_filtered_data()
         shapes <- country_shapes
@@ -2268,38 +2415,32 @@ server <- function(input, output, session) {
           data = shapes
         )
       })
-      
-      output$joint_detail_map_title <- renderText({
+
+      output[[paste0(output_prefix, "_map_title")]] <- renderText({
         info <- joint_component_filtered_data()
-        component_label <- joint_component_display_label(info$key)
         sprintf(
-          lang_label("joint_component_map_title"),
-          component_label,
+          lang_label(paste0("joint_", info$key, "_map_title")),
           joint_admin_label(input$joint_admin_filter)
         )
       })
-      
-      output$joint_detail_bar_title <- renderText({
+
+      output[[paste0(output_prefix, "_bar_title")]] <- renderText({
         info <- joint_component_filtered_data()
-        component_label <- joint_component_display_label(info$key)
         sprintf(
-          lang_label("joint_component_distribution_title"),
-          component_label,
+          lang_label(paste0("joint_", info$key, "_distribution_title")),
           joint_admin_label(input$joint_admin_filter)
         )
       })
-      
-      output$joint_detail_table_title <- renderText({
+
+      output[[paste0(output_prefix, "_table_title")]] <- renderText({
         info <- joint_component_filtered_data()
-        component_label <- joint_component_display_label(info$key)
         sprintf(
-          lang_label("joint_component_table_title"),
-          component_label,
+          lang_label(paste0("joint_", info$key, "_table_title")),
           joint_admin_label(input$joint_admin_filter)
         )
       })
-      
-      output$joint_detail_map <- renderLeaflet({
+
+      output[[paste0(output_prefix, "_map")]] <- renderLeaflet({
         map_info <- joint_component_map_data()
         map_data <- map_info$data
         key <- map_info$key
@@ -2353,25 +2494,26 @@ server <- function(input, output, session) {
             )
           ) %>%
           addLegend(
-            title = sprintf(lang_label("joint_component_joint_level"), component_label),
+            title = lang_label("joint_risk_level_title"),
             colors = joint_palette[rev(joint_risk_levels)],
             labels = rev(unname(joint_level_display)),
             opacity = 0.7,
             position = 'topright'
-          )
+          ) %>%
+          addResetMapButton()
       })
-      
-      output$joint_detail_summary_text <- renderUI({
+
+      output[[paste0(output_prefix, "_summary_text")]] <- renderUI({
         joint_make_summary_text(joint_component_counts(), joint_text_location())
       })
-      outputOptions(output, "joint_detail_summary_text",  suspendWhenHidden = FALSE)
+      outputOptions(output, paste0(output_prefix, "_summary_text"),  suspendWhenHidden = FALSE)
 
-      output$joint_detail_summary_table <- renderDataTable(server = FALSE, {
+      output[[paste0(output_prefix, "_summary_table")]] <- renderDataTable(server = FALSE, {
         joint_make_summary_table(joint_component_counts())
       })
-      outputOptions(output, "joint_detail_summary_table", suspendWhenHidden = FALSE)
+      outputOptions(output, paste0(output_prefix, "_summary_table"), suspendWhenHidden = FALSE)
 
-      output$joint_detail_barplot <- renderPlotly({
+      output[[paste0(output_prefix, "_barplot")]] <- renderPlotly({
         counts_tbl <- joint_component_counts() %>%
           mutate(level_label = factor(joint_level_display[as.character(level)], levels = unname(joint_level_display)))
         plot_ly(
@@ -2385,7 +2527,7 @@ server <- function(input, output, session) {
           textposition = "outside"
         ) %>%
         layout(
-          xaxis = list(title = "", tickfont = list(size = 12)),
+          xaxis = list(title = lang_label("joint_barplot_xaxis_title"), tickfont = list(size = 12)),
           yaxis = list(title = lang_label("joint_num_municipalities"), tickfont = list(size = 12)),
             showlegend = FALSE,
             margin = list(l = 40, r = 20, t = 30, b = 60)
@@ -2393,7 +2535,7 @@ server <- function(input, output, session) {
           config(displaylogo = FALSE)
       })
       
-      output$joint_detail_table <- renderDataTable(server = FALSE,{
+      output[[paste0(output_prefix, "_table")]] <- renderDataTable(server = FALSE,{
         info <- joint_component_filtered_data()
         key <- info$key
         component_label <- joint_component_display_label(key)
@@ -2408,7 +2550,7 @@ server <- function(input, output, session) {
         measles_level_label <- sprintf(lang_label("joint_component_measles_level"), component_label)
         polio_score_label <- sprintf(lang_label("joint_component_polio_score"), component_label)
         polio_level_label <- sprintf(lang_label("joint_component_polio_level"), component_label)
-        joint_level_label <- sprintf(lang_label("joint_component_joint_level"), component_label)
+        joint_level_label <- lang_label("joint_risk_level_title")
         dat <- info$data %>%
           transmute(
             !!admin1_col := admin1_label,
@@ -2445,9 +2587,18 @@ server <- function(input, output, session) {
             color = styleEqual(disp_levels, c("black","black","white","white"))
           )
       })
+
+      }
+
+      if ("immunity" %in% names(joint_component_data_lookup)) {
+        make_joint_component_server("immunity", "joint_immunity")
+      }
+      if ("surveillance" %in% names(joint_component_data_lookup)) {
+        make_joint_component_server("surveillance", "joint_surveillance")
+      }
     }
   }
-  
+
   # SERVER INM_POB ----
   output$inmunidad_title_data_box <- renderText({
     title_data_box(lang_label("INM_POB"),input$inmunidad_select_admin1)

@@ -165,7 +165,8 @@ amenaza_plot_map_data <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,
       addLegend(layerId = "map_title","topright",color = "white", opacity = 0,labels=HTML(paste0("<strong>",amenaza_title_map(LANG_TLS,COUNTRY_NAME,YEAR_LIST,admin1,var_to_summarise),"</strong>"))) %>%
       addLegend(title = lang_label_tls(LANG_TLS,"thre_pop_dens"),colors = legend_colors,labels = legend_values, opacity = 0.5, position = 'topright')
   }
-  
+
+  map <- map %>% addResetMapButton()
   return(map)
   
 }

@@ -311,7 +311,8 @@ resrapida_plot_map_data <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIS
   #     addLegend(layerId = "map_title","topright",color = "white", opacity = 0,labels=HTML(paste0("<strong>",resrapida_title_map(LANG_TLS,COUNTRY_NAME,YEAR_LIST,admin1,var_to_summarise),"</strong>"))) %>%
   #     addLegend(title = paste(lang_label_tls(LANG_TLS,"rap_pres_hospital"),"(%)"),colors = legend_colors,labels = legend_values, opacity = 0.5, position = 'topright')
   # }
-  
+
+  map <- map %>% addResetMapButton()
   return(map)
   
 }

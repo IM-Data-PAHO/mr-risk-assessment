@@ -21,7 +21,7 @@ library(pacman)
 # Install required packages if not already installed
 p_load(devtools,webshot,lubridate,forcats,stringr,dplyr,purrr,readr,tibble,
        tidyverse,tidyr,shinydashboard,shinyBS,shiny,shinycssloaders,shinyjs,sf,scales,
-       rmarkdown,readxl,RColorBrewer,plotly,ggplot2,mapview,leaflet,janitor,
+       rmarkdown,readxl,RColorBrewer,plotly,ggplot2,mapview,leaflet,leaflet.extras,janitor,
        htmltools,fontawesome,DT,data.table,knitr,geojsonio,rmapshaper,sp,
        tinytex,rsconnect,writexl,rio,openxlsx,
        install = T)
@@ -35,7 +35,7 @@ loaded_packages = p_loaded()
 to_be_installed <- setdiff(
   c("devtools","webshot","lubridate","forcats","stringr","dplyr","purrr","readr","tibble",
     "tidyverse","tidyr","shinydashboard","shinyBS","shiny","sf","scales","rmarkdown",
-    "readxl","RColorBrewer","plotly","ggplot2","mapview","leaflet","janitor","htmltools",
+    "readxl","RColorBrewer","plotly","ggplot2","mapview","leaflet","leaflet.extras","janitor","htmltools",
     "fontawesome","DT","data.table","knitr","geojsonio","rmapshaper","sp","tinytex",
     "shinycssloaders","shinyjs","rsconnect","writexl","rio","openxlsx"), loaded_packages)
 

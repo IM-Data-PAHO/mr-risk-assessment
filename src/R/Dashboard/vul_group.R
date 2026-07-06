@@ -187,8 +187,9 @@ vul_plot_map_data <- function(LANG_TLS,COUNTRY_NAME,YEAR_LIST,ZERO_POB_LIST,CUT_
       ) %>% 
       addLegend(layerId = "map_title","topright",color = "white", opacity = 0,labels=HTML(paste0("<strong>",vul_title_map(LANG_TLS,COUNTRY_NAME,YEAR_LIST,admin1,pres_type),"</strong>"))) %>%
       addLegend(title = lang_label_tls(LANG_TLS,"legend_risk_class"),colors = legend_colors,labels = legend_values, opacity = 0.5, position = 'topright')
-  }  
-  
+  }
+
+  map <- map %>% addResetMapButton()
   return(map)
   
 }

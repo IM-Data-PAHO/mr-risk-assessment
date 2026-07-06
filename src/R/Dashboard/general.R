@@ -516,7 +516,8 @@ ind_plot_map_data <- function(LANG_TLS,ZERO_POB_LIST,CUT_OFFS,map_data,indicator
         direction = "auto")
     ) %>% 
     addLegend(title = lang_label_tls(LANG_TLS,"legend_risk_class"),colors = legend_colors,labels = legend_values, opacity = 0.5, position = 'topright')
-  
+
+  map <- map %>% addResetMapButton()
   return(map)
   
 }

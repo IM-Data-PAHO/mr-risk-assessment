@@ -22,7 +22,6 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, out.width 
 
 library(leaflet)
 library(mapview)
-library(ggplot2)
 library(knitr)
 library(tidyverse)
 library(sf)
@@ -40,6 +39,10 @@ country_shapes  <- params$country_shapes
 ZOOM_CONFIG <- "Mozilla/5.0 (compatible; MSIE 10.6; Windows NT 6.1; Trident/5.0)"
 
 lang_label <- function(label) LANG_TLS$LANG[LANG_TLS$LABEL == label]
+# Titles shared with the dashboard carry a trailing " - %s" for the admin1
+# location, filled in via sprintf() there. The report already appends
+# country/year in the caption itself, so strip that placeholder here.
+title_no_loc <- function(label) sub(" - %s$", "", lang_label(label))
 
 joint_risk_levels <- c("Low","Medium","High","Very high")
 joint_palette <- c(Low="#92d050",Medium="#fec000",High="#e8132b","Very high"="#920000")
@@ -101,19 +104,6 @@ make_joint_map_shot <- function(data, level_col, outfile) {
     htmlwidgets::prependContent(html_round_legend)
   mapshot(m, file = outfile, useragent = ZOOM_CONFIG)
   invisible(outfile)
-}
-
-make_bar_gg <- function(counts_tbl) {
-  ct <- counts_tbl %>%
-    mutate(level_label = factor(joint_level_display[as.character(level)],
-                                levels = unname(joint_level_display)))
-  ggplot(ct, aes(x = level_label, y = n, fill = level_label)) +
-    geom_bar(stat = "identity", width = 0.6) +
-    geom_text(aes(label = n), vjust = -0.4, size = 3.5) +
-    scale_fill_manual(values = joint_palette_display, guide = "none") +
-    labs(x = NULL, y = lang_label("joint_num_municipalities")) +
-    theme_minimal(base_size = 11) +
-    theme(axis.text.x = element_text(size = 10))
 }
 
 make_summary_text <- function(counts_tbl) {
@@ -182,21 +172,16 @@ sec1_counts <- make_counts(joint_base_data, "joint_risk_level")
 
 `r make_summary_text(sec1_counts)`
 
-#### `r tbl_label` 1a: `r lang_label("joint_table_title")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+#### `r tbl_label` 1a: `r title_no_loc("joint_table_title")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
 ```{r table_1a}
 make_summary_kable(sec1_counts)
 ```
 
-#### `r fig_label` 1a: `r lang_label("joint_map_title")` — `r COUNTRY_NAME`, `r YEAR_EVAL`.
+#### `r fig_label` 1a: `r title_no_loc("joint_map_title")` — `r COUNTRY_NAME`, `r YEAR_EVAL`.
 ```{r figure_1a}
 f <- tempfile(fileext = ".png")
 make_joint_map_shot(joint_base_data, "joint_risk_level", f)
 knitr::include_graphics(f)
-```
-
-#### `r fig_label` 1b: `r lang_label("joint_distribution_title")` — `r COUNTRY_NAME`, `r YEAR_EVAL`.
-```{r figure_1b, fig.width=5, fig.height=3.5}
-make_bar_gg(sec1_counts)
 ```
 
 #### `r tbl_label` 1b: `r lang_label("joint_table_data_title")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
@@ -232,12 +217,12 @@ sec2_counts_polio   <- make_counts(joint_immunity_data, "polio_immunity_risk_lev
 cat(make_summary_text(sec2_counts_joint))
 ```
 
-#### `r tbl_label` 2a: `r lang_label("menuitem_inm_pob")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+#### `r tbl_label` 2a: `r title_no_loc("joint_immunity_table_title")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
 ```{r table_2a, eval=sec2_available}
 make_summary_kable(sec2_counts_joint)
 ```
 
-#### `r fig_label` 2a: `r lang_label("menuitem_inm_pob")` — `r lang_label("joint_label_joint")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+#### `r fig_label` 2a: `r title_no_loc("joint_immunity_map_title")` — `r COUNTRY_NAME`, `r YEAR_EVAL`.
 ```{r figure_2a, eval=sec2_available}
 f <- tempfile(fileext = ".png")
 make_joint_map_shot(joint_immunity_data, "joint_immunity_risk_level", f)
@@ -258,11 +243,6 @@ make_joint_map_shot(joint_immunity_data, "polio_immunity_risk_level", f)
 knitr::include_graphics(f)
 ```
 
-#### `r fig_label` 2d: `r lang_label("joint_distribution_title")` — `r lang_label("menuitem_inm_pob")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
-```{r figure_2d, fig.width=5, fig.height=3.5, eval=sec2_available}
-make_bar_gg(sec2_counts_joint)
-```
-
 \newpage
 
 # `r lang_label("menuitem_surv_qual")`
@@ -281,12 +261,12 @@ sec3_counts_polio   <- make_counts(joint_surveillance_data, "polio_surveillance_
 cat(make_summary_text(sec3_counts_joint))
 ```
 
-#### `r tbl_label` 3a: `r lang_label("menuitem_surv_qual")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+#### `r tbl_label` 3a: `r title_no_loc("joint_surveillance_table_title")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
 ```{r table_3a, eval=sec3_available}
 make_summary_kable(sec3_counts_joint)
 ```
 
-#### `r fig_label` 3a: `r lang_label("menuitem_surv_qual")` — `r lang_label("joint_label_joint")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
+#### `r fig_label` 3a: `r title_no_loc("joint_surveillance_map_title")` — `r COUNTRY_NAME`, `r YEAR_EVAL`.
 ```{r figure_3a, eval=sec3_available}
 f <- tempfile(fileext = ".png")
 make_joint_map_shot(joint_surveillance_data, "joint_surveillance_risk_level", f)
@@ -307,7 +287,3 @@ make_joint_map_shot(joint_surveillance_data, "polio_surveillance_risk_level", f)
 knitr::include_graphics(f)
 ```
 
-#### `r fig_label` 3d: `r lang_label("joint_distribution_title")` — `r lang_label("menuitem_surv_qual")`, `r COUNTRY_NAME`, `r YEAR_EVAL`.
-```{r figure_3d, fig.width=5, fig.height=3.5, eval=sec3_available}
-make_bar_gg(sec3_counts_joint)
-```
