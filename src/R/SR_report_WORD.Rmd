@@ -26,6 +26,7 @@ load(file = "Dashboard/SR_BD.RData")
 library(mapview)
 library(knitr)
 library(leaflet)
+library(leaflet.extras)
 library(htmltools)
 library(RColorBrewer)
 library(readxl)
@@ -73,13 +74,22 @@ cFormat <- function(x,n) {
   return (cf)
 }
 
+# The dashboard's reset-view button (leaflet.extras::addResetMapButton) is only
+# meaningful on a live widget. These maps get flattened to static PNGs via
+# mapshot(), where the button would just be a frozen, non-clickable icon.
+strip_reset_button <- function(map) {
+  map$x$calls <- Filter(function(call) !(call$method %in% c("addEasyButton", "onRender")), map$x$calls)
+  map
+}
+
 tidy_map <- function(map) {
   #CENTER_LAT = mean(c(map$x$limits$lat[1],map$x$limits$lat[2]))
   #CENTER_LNG = mean(c(map$x$limits$lng[1],map$x$limits$lng[2]))
-  map <- map %>% clearTiles() %>% 
+  map <- map %>% clearTiles() %>%
     removeControl(layerId = "map_title") %>%
-    htmlwidgets::prependContent(html_white_background) %>%  
-    htmlwidgets::prependContent(html_leaflet_round_legend) %>% 
+    strip_reset_button() %>%
+    htmlwidgets::prependContent(html_white_background) %>%
+    htmlwidgets::prependContent(html_leaflet_round_legend) %>%
     #setView(lat=CENTER_LAT,lng=CENTER_LNG,zoom = VAR_MAP_ZOOM)
   return(map)
 }
